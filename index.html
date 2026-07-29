@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Spare Parts">
+  <title>Spare Parts — Wolfsburg</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    :root {
+      --blue:    #1a73e8;
+      --green:   #0f9d58;
+      --red:     #e53935;
+      --orange:  #f4b400;
+      --purple:  #7b1fa2;
+      --bg:      #f0f2f5;
+      --white:   #ffffff;
+      --border:  #e0e0e0;
+      --text:    #333333;
+      --muted:   #888888;
+      --radius:  14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--blue);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .header-title { font-size: 18px; font-weight: 600; }
+    .header-sub   { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+    .logout-btn   { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; font-family: inherit; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      display: flex;
+      border-top: 1px solid var(--border);
+      z-index: 100;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 4px 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 10px;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .nav-btn.active { color: var(--blue); }
+    .nav-btn .icon  { font-size: 22px; margin-bottom: 3px; }
+
+    /* ── SCREENS ── */
+    .screen { display: none; padding: 16px 16px 90px; min-height: 100vh; animation: fadeIn 0.2s; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+    /* Screen backgrounds */
+    #screen-login   { background: var(--blue); padding: 0; display: flex; flex-direction: column; justify-content: center; min-height: 100vh; }
+    #screen-home    { background: #e8f0fe; }
+    #screen-count   { background: #e8f5e9; }
+    #screen-stock   { background: #e6f4ea; }
+    #screen-log     { background: #fff8e1; }
+    #screen-history { background: #f3e5f5; }
+    #screen-alerts  { background: #fce8e6; }
+
+    /* ── LOGIN SCREEN ── */
+    .login-box {
+      background: white;
+      margin: 24px 20px;
+      border-radius: 20px;
+      padding: 32px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .login-logo  { font-size: 48px; text-align: center; margin-bottom: 8px; }
+    .login-title { font-size: 22px; font-weight: 700; text-align: center; color: var(--blue); margin-bottom: 4px; }
+    .login-sub   { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 28px; }
+    .pin-label   { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pin-input   { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 24px; text-align: center; letter-spacing: 8px; outline: none; font-family: inherit; color: var(--text); transition: border-color 0.15s; }
+    .pin-input:focus { border-color: var(--blue); }
+    .pin-error   { color: var(--red); font-size: 13px; text-align: center; margin-top: 8px; min-height: 20px; }
+    .login-btn   { width: 100%; padding: 16px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 17px; font-weight: 600; cursor: pointer; font-family: inherit; margin-top: 16px; transition: opacity 0.15s; }
+    .login-btn:active { opacity: 0.85; }
+    .login-btn:disabled { opacity: 0.5; }
+
+    /* ── CARDS ── */
+    .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card  { background: white; border-radius: var(--radius); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .blue   { color: var(--blue); }
+    .green  { color: var(--green); }
+    .red    { color: var(--red); }
+    .orange { color: var(--orange); }
+
+    /* ── SECTION TITLE ── */
+    .section-title { font-size: 16px; font-weight: 600; margin: 16px 0 10px; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { background: white; border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .progress-top  { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .progress-label { font-size: 14px; font-weight: 600; }
+    .progress-pct   { font-size: 14px; font-weight: 700; color: var(--blue); }
+    .progress-bar   { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--green); border-radius: 5px; transition: width 0.5s; }
+
+    /* ── SEARCH ── */
+    .search-wrap { background: white; border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .search-wrap input { border: none; outline: none; flex: 1; font-size: 15px; font-family: inherit; color: var(--text); background: transparent; }
+
+    /* ── FILTER TABS ── */
+    .filter-row { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .ftab { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+    .ftab.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+    /* ── PART CARD ── */
+    .part-card { background: white; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid var(--border); }
+    .part-card.ok      { border-left-color: var(--green); }
+    .part-card.low     { border-left-color: var(--red); }
+    .part-card.counted { border-left-color: var(--blue); }
+    .part-header { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin-bottom: 10px; }
+    .part-id     { font-size: 14px; font-weight: 700; color: var(--blue); }
+    .part-sep    { font-size: 14px; color: var(--muted); }
+    .part-name   { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .part-stocks { display: flex; gap: 12px; }
+    .stock-box   { text-align: center; }
+    .stock-lbl   { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+    .stock-val   { font-size: 22px; font-weight: 700; padding: 2px 10px; border-radius: 8px; display: inline-block; }
+    .stocks-qty   { color: #1565c0; background: #e3f2fd; }
+    .mechanic-qty { color: #6a1b9a; background: #f3e5f5; }
+    .total-qty    { color: #e65100; background: #fff3e0; }
+    .low-qty      { color: white; background: var(--red); }
+
+    /* ── COUNT CARD ── */
+    .count-card { background: white; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .count-card.counted { border-left: 4px solid var(--green); }
+    .count-card.pending { border-left: 4px solid var(--border); }
+    .counted-badge { display: inline-block; background: #e8f5e9; color: var(--green); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; }
+    .pending-badge { display: inline-block; background: #f5f5f5; color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; }
+    .count-meta { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .count-qty-show { font-size: 28px; font-weight: 700; color: var(--blue); }
+
+    /* ── FORM ── */
+    .form-card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 12px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input, .form-select { width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 16px; font-family: inherit; color: var(--text); background: white; outline: none; transition: border-color 0.15s; appearance: none; }
+    .form-input:focus, .form-select:focus { border-color: var(--blue); }
+    .count-input { font-size: 32px; font-weight: 700; text-align: center; letter-spacing: 4px; }
+
+    /* ── QR BTN ── */
+    .qr-btn { width: 100%; padding: 16px; background: #e8f0fe; border: 2px dashed var(--blue); border-radius: 10px; color: var(--blue); font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+
+    /* ── SELECTED PART ── */
+    .sel-part { background: #e8f0fe; border: 2px solid var(--blue); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+    .sel-id   { font-size: 15px; font-weight: 700; color: var(--blue); }
+    .sel-name { font-size: 15px; font-weight: 500; color: var(--text); margin-top: 2px; }
+    .sel-info { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* ── SEARCH DROPDOWN ── */
+    .sdrop { position: absolute; background: white; border: 2px solid var(--border); border-radius: 10px; max-height: 240px; overflow-y: auto; z-index: 200; width: calc(100% - 32px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .sdrop-item { padding: 14px 16px; cursor: pointer; border-bottom: 1px solid #f5f5f5; }
+    .sdrop-item:last-child { border-bottom: none; }
+    .sdrop-item:active { background: #f5f5f5; }
+    .sdrop-id   { font-size: 13px; font-weight: 700; color: var(--blue); }
+    .sdrop-name { font-size: 13px; color: var(--text); margin-top: 2px; }
+    .sdrop-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── SUBMIT BTN ── */
+    .submit-btn { width: 100%; padding: 18px; background: var(--blue); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+    .submit-btn:disabled { opacity: 0.4; }
+    .submit-btn:active   { opacity: 0.85; }
+    .submit-btn.green-btn { background: var(--green); }
+
+    /* ── MANAGER BUTTONS ── */
+    .mgr-btn-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .mgr-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+    .mgr-btn:active { opacity: 0.85; }
+    .mgr-btn.start  { background: var(--green); color: white; }
+    .mgr-btn.lock   { background: var(--red); color: white; }
+    .mgr-btn.unlock { background: var(--orange); color: white; }
+
+    /* ── SESSION STATUS ── */
+    .session-status { border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; font-weight: 600; text-align: center; }
+    .session-status.inactive { background: #f5f5f5; color: var(--muted); }
+    .session-status.active   { background: #e8f5e9; color: var(--green); }
+    .session-status.locked   { background: #fce8e6; color: var(--red); }
+
+    /* ── MOVEMENT CARD ── */
+    .mov-card { background: white; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid var(--blue); }
+    .mov-card.incoming { border-left-color: var(--green); }
+    .mov-card.transfer { border-left-color: var(--orange); }
+    .mov-card.sent     { border-left-color: var(--red); }
+    .mov-card.received { border-left-color: var(--blue); }
+    .mov-top  { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .mov-type { font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .mov-qty  { font-size: 18px; font-weight: 700; }
+    .mov-name { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+    .mov-meta { font-size: 11px; color: var(--muted); }
+
+    /* ── ALERT CARD ── */
+    .alert-card { background: white; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; border: 1px solid #ffcdd2; }
+    .alert-name { font-size: 14px; font-weight: 600; color: var(--red); margin-bottom: 6px; }
+    .alert-row  { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 3px; }
+    .alert-val  { font-weight: 700; color: var(--red); }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 24px; font-size: 14px; z-index: 300; display: none; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2); max-width: calc(100vw - 32px); text-align: center; }
+    .toast.success { background: var(--green); }
+    .toast.error   { background: var(--red); }
+    .toast.warning { background: var(--orange); color: #333; }
+
+    /* ── LOADING ── */
+    .loading { text-align: center; padding: 60px 16px; color: var(--muted); }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EMPTY ── */
+    .empty { text-align: center; padding: 60px 16px; color: var(--muted); font-size: 15px; }
+    .empty-icon { font-size: 56px; margin-bottom: 14px; }
+
+    /* ── OVERRIDE MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 400; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal-box { background: white; border-radius: 20px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .modal-text  { font-size: 14px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+    .modal-btns  { display: flex; gap: 10px; }
+    .modal-btn   { flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .modal-btn.cancel   { background: #f5f5f5; color: var(--text); }
+    .modal-btn.override { background: var(--red); color: white; }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- OVERRIDE MODAL -->
+<div class="modal-overlay" id="override-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Already Counted</div>
+    <div class="modal-text" id="override-text"></div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeOverrideModal()">Cancel</button>
+      <button class="modal-btn override" onclick="confirmOverride()">Override</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">🔧</div>
+    <div class="login-title">Spare Parts</div>
+    <div class="login-sub">Wolfsburg Inventory</div>
+    <div class="pin-label">Enter your PIN</div>
+    <input type="password" inputmode="numeric" class="pin-input" id="pin-input"
+           placeholder="••••" maxlength="6"
+           onkeyup="if(event.key==='Enter') doLogin()">
+    <div class="pin-error" id="pin-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<!-- ═══════════════ HOME SCREEN ═══════════════ -->
+<div class="screen" id="screen-home">
+  <div id="home-content">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ COUNT SCREEN ═══════════════ -->
+<div class="screen" id="screen-count">
+  <div id="count-content">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ STOCK SCREEN ═══════════════ -->
+<div class="screen" id="screen-stock">
+  <div class="search-wrap">
+    <span>🔍</span>
+    <input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()">
+  </div>
+  <div class="filter-row">
+    <button class="ftab active" onclick="setStockFilter('all',this)">All</button>
+    <button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low</button>
+    <button class="ftab" onclick="setStockFilter('stocks',this)">📦 Stocks</button>
+    <button class="ftab" onclick="setStockFilter('mechanic',this)">🔧 Mechanic</button>
+  </div>
+  <div id="stock-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+  <div id="stock-content">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ LOG SCREEN ═══════════════ -->
+<div class="screen" id="screen-log">
+  <div class="form-card">
+    <div class="section-title" style="margin-top:0;">Log Movement</div>
+    <button class="qr-btn" onclick="startQRScan()">📷 Scan QR Code</button>
+    <div class="form-group" style="position:relative;">
+      <label class="form-label">Search Part</label>
+      <input type="text" class="form-input" id="log-search"
+             placeholder="Type name or code..."
+             oninput="onLogSearch(this.value)"
+             autocomplete="off">
+      <div class="sdrop" id="log-drop" style="display:none;"></div>
+    </div>
+    <div class="sel-part" id="log-sel" style="display:none;">
+      <div class="sel-id"   id="log-sel-id"></div>
+      <div class="sel-name" id="log-sel-name"></div>
+      <div class="sel-info" id="log-sel-info"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="log-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Movement Type</label>
+      <select class="form-select" id="log-type" onchange="onLogTypeChange()">
+        <option value="">Select type...</option>
+        <option value="Incoming from supplier">📥 Incoming from supplier</option>
+        <option value="Transfer to mechanic">🔧 Transfer to mechanic</option>
+        <option value="Sent to other city">🚚 Sent to other city</option>
+        <option value="Received from other city">📦 Received from other city</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantity</label>
+      <input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1">
+    </div>
+    <div class="form-group" id="log-city-group" style="display:none;">
+      <label class="form-label">City</label>
+      <input type="text" class="form-input" id="log-city" placeholder="City name...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input type="text" class="form-input" id="log-notes" placeholder="Any notes...">
+    </div>
+    <button class="submit-btn" id="log-submit" onclick="submitLog()">Submit Movement</button>
+  </div>
+</div>
+
+<!-- ═══════════════ HISTORY SCREEN ═══════════════ -->
+<div class="screen" id="screen-history">
+  <div class="search-wrap">
+    <span>🔍</span>
+    <input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()">
+  </div>
+  <div id="hist-content">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
+</div>
+
+<!-- ═══════════════ ALERTS SCREEN ═══════════════ -->
+<div class="screen" id="screen-alerts">
+  <div id="alerts-content">
+    <div class="loading"><div class="spinner"></div>Loading...</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV (hidden on login) -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-btn active" id="nav-home" onclick="showScreen('home',this)">
+    <span class="icon">🏠</span>Home
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIGURATION — Change this to your Apps Script URL
+// ═══════════════════════════════════════════════════════════
+var API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+var S = {
+  user:        null,
+  parts:       [],
+  movements:   [],
+  countParts:  [],
+  stockFilter: 'all',
+  logSelected: null,
+  countSelected: null,
+  overridePending: null,
+  session:     { status: 'inactive' }
+};
+
+// ═══════════════════════════════════════════════════════════
+// API CALL
+// ═══════════════════════════════════════════════════════════
+function api(params) {
+  var url = API_URL + '?' + Object.keys(params).map(function(k){
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+
+  return fetch(url)
+    .then(function(r){ return r.json(); })
+    .catch(function(e){ return { success: false, error: e.message }; });
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════
+function doLogin() {
+  var pin = document.getElementById('pin-input').value.trim();
+  if (!pin) { showPinError('Please enter your PIN'); return; }
+
+  var btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  document.getElementById('pin-error').textContent = '';
+
+  api({ action: 'verifyPin', pin: pin })
+    .then(function(r) {
+      if (r.success) {
+        S.user = r;
+        S.user.pin = pin;
+        buildNav();
+        loadDashboardData(function() {
+          showScreen('home', document.getElementById('nav-home'));
+          document.getElementById('screen-login').style.display = 'none';
+          document.getElementById('bottom-nav').style.display = 'flex';
+        });
+      } else {
+        showPinError('Invalid PIN. Please try again.');
+        document.getElementById('pin-input').value = '';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    });
+}
+
+function showPinError(msg) {
+  document.getElementById('pin-error').textContent = msg;
+}
+
+function logout() {
+  S.user = null;
+  S.parts = [];
+  S.movements = [];
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('bottom-nav').style.display = 'none';
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-login').style.display = 'flex';
+  document.getElementById('screen-login').classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUILD NAVIGATION based on permissions
+// ═══════════════════════════════════════════════════════════
+function buildNav() {
+  var nav  = document.getElementById('bottom-nav');
+  var p    = S.user.permissions;
+  var role = S.user.role;
+  var html = '';
+
+  // Home always visible
+  html += navBtn('home', '🏠', 'Home', true);
+
+  // Count screen
+  if (role === 'Manager' || p.count)   html += navBtn('count',   '🔢', 'Count',   false);
+  if (role === 'Manager' || p.stock)   html += navBtn('stock',   '📦', 'Stock',   false);
+  if (role === 'Manager' || p.log)     html += navBtn('log',     '➕', 'Log',     false);
+  if (role === 'Manager' || p.history) html += navBtn('history', '📋', 'History', false);
+  if (role === 'Manager' || p.alerts)  html += navBtn('alerts',  '🔔', 'Alerts',  false);
+
+  nav.innerHTML = html;
+}
+
+function navBtn(id, icon, label, active) {
+  return '<button class="nav-btn'+(active?' active':'')+'" id="nav-'+id+'" onclick="showScreen(\''+id+'\',this)">' +
+    '<span class="icon">'+icon+'</span>'+label+'</button>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOW SCREEN
+// ═══════════════════════════════════════════════════════════
+function showScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('screen-'+name).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  if (name === 'home')    renderHome();
+  if (name === 'count')   loadCountScreen();
+  if (name === 'stock')   renderStock();
+  if (name === 'log')     initLog();
+  if (name === 'history') renderHistory();
+  if (name === 'alerts')  renderAlerts();
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════════
+function loadDashboardData(cb) {
+  api({ action: 'getDashboard', pin: S.user.pin })
+    .then(function(r) {
+      if (r.success) {
+        S.parts     = r.parts     || [];
+        S.movements = r.movements || [];
+        S.session   = r.session   || { status: 'inactive' };
+      }
+      if (cb) cb();
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════════
+function renderHome() {
+  var low      = S.parts.filter(function(p){ return p.stocksLow||p.mechanicLow; }).length;
+  var total    = S.parts.length;
+  var todayUse = S.parts.reduce(function(s,p){ return s+(p.todayUsed||0); }, 0);
+  var inStock  = S.parts.filter(function(p){ return (p.stocksRemaining||0)>0; }).length;
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+    '<div><div style="font-size:18px;font-weight:700;">Welcome, '+S.user.name+' 👋</div>' +
+    '<div style="font-size:13px;color:var(--muted);">'+S.user.role+'</div></div>' +
+    '<button class="logout-btn" style="background:rgba(0,0,0,0.08);color:var(--text);" onclick="logout()">Logout</button>' +
+    '</div>';
+
+  html += '<div class="cards-grid">';
+  html += statCard('Total Parts', total,    'blue');
+  html += statCard('Low Stock',   low,      'red');
+  html += statCard('Used Today',  todayUse, 'orange');
+  html += statCard('In Stock',    inStock,  'green');
+  html += '</div>';
+
+  // Session status for manager
+  if (S.user.role === 'Manager') {
+    html += sessionStatusHTML();
+    html += managerButtons();
+  } else {
+    // Show count session status for mechanics
+    html += sessionStatusHTML();
+  }
+
+  html += '<div class="section-title">📋 Recent Movements</div>';
+  if (S.movements.length > 0) {
+    S.movements.slice(0,5).forEach(function(m){ html += movCard(m); });
+  } else {
+    html += '<div class="empty"><div class="empty-icon">📋</div>No movements yet</div>';
+  }
+
+  document.getElementById('home-content').innerHTML = html;
+}
+
+function statCard(label, val, color) {
+  return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-value '+color+'">'+val+'</div></div>';
+}
+
+function sessionStatusHTML() {
+  var s   = S.session;
+  var cls = s.status === 'active' ? 'active' : s.status === 'locked' ? 'locked' : 'inactive';
+  var msg = s.status === 'active'   ? '✅ Count session is OPEN'   :
+            s.status === 'locked'   ? '🔒 Count session is LOCKED' :
+            '⏸️ No active count session';
+  return '<div class="session-status '+cls+'">'+msg+'</div>';
+}
+
+function managerButtons() {
+  var s    = S.session;
+  var html = '<div class="mgr-btn-row">';
+  if (s.status === 'inactive') {
+    html += '<button class="mgr-btn start" onclick="managerStartCount()">▶️ Start Count</button>';
+  }
+  if (s.status === 'active') {
+    html += '<button class="mgr-btn lock" onclick="managerLockCount()">🔒 Lock Count</button>';
+  }
+  if (s.status === 'locked') {
+    html += '<button class="mgr-btn unlock" onclick="managerUnlockCount()">🔓 Unlock Count</button>';
+    html += '<button class="mgr-btn start" onclick="managerStartCount()">🔄 New Count</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function managerStartCount() {
+  if (!confirm('Start a new count session? This will clear all previous count data.')) return;
+  api({ action: 'startCount', pin: S.user.pin })
+    .then(function(r){
+      if (r.success) {
+        S.session = { status: 'active' };
+        showToast('✅ Count session started!', 'success');
+        renderHome();
+      } else {
+        showToast('❌ ' + r.error, 'error');
+      }
+    });
+}
+
+function managerLockCount() {
+  if (!confirm('Lock the count session? Mechanics will not be able to make changes.')) return;
+  api({ action: 'lockCount', pin: S.user.pin })
+    .then(function(r){
+      if (r.success) {
+        S.session = { status: 'locked' };
+        showToast('🔒 Count session locked!', 'success');
+        renderHome();
+      } else {
+        showToast('❌ ' + r.error, 'error');
+      }
+    });
+}
+
+function managerUnlockCount() {
+  api({ action: 'unlockCount', pin: S.user.pin })
+    .then(function(r){
+      if (r.success) {
+        S.session = { status: 'active' };
+        showToast('🔓 Count session unlocked!', 'success');
+        renderHome();
+      } else {
+        showToast('❌ ' + r.error, 'error');
+      }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// COUNT SCREEN
+// ═══════════════════════════════════════════════════════════
+function loadCountScreen() {
+  document.getElementById('count-content').innerHTML =
+    '<div class="loading"><div class="spinner"></div>Loading...</div>';
+
+  Promise.all([
+    api({ action: 'getProgress' }),
+    api({ action: 'getParts' })
+  ]).then(function(results) {
+    var progress = results[0];
+    var partsRes = results[1];
+
+    S.countParts = partsRes.success ? partsRes.parts : [];
+    S.session    = progress.success ? progress.session : S.session;
+
+    renderCountScreen(progress);
+  });
+}
+
+function renderCountScreen(progress) {
+  var s    = S.session;
+  var html = '';
+
+  // Session status
+  html += sessionStatusHTML();
+
+  // Manager buttons
+  if (S.user.role === 'Manager') {
+    html += managerButtons();
+  }
+
+  // Progress bar
+  if (s.status !== 'inactive' && progress.success) {
+    var pct = progress.percentage || 0;
+    html += '<div class="progress-wrap">' +
+      '<div class="progress-top">' +
+        '<span class="progress-label">Count Progress</span>' +
+        '<span class="progress-pct">'+pct+'%</span>' +
+      '</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:6px;">'+
+        (progress.countedParts||0)+' of '+(progress.totalParts||0)+' parts counted' +
+      '</div></div>';
+  }
+
+  if (s.status === 'inactive') {
+    if (S.user.role !== 'Manager') {
+      html += '<div class="empty"><div class="empty-icon">⏸️</div>No active count session.<br>Ask manager to start.</div>';
+    }
+    document.getElementById('count-content').innerHTML = html;
+    return;
+  }
+
+  // Count form
+  if (s.status === 'active' || S.user.role === 'Manager') {
+    html += '<div class="form-card">' +
+      '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>' +
+      '<button class="qr-btn" onclick="startCountQR()">📷 Scan QR Code</button>' +
+      '<div class="form-group" style="position:relative;">' +
+        '<label class="form-label">Search Part</label>' +
+        '<input type="text" class="form-input" id="count-search-input" placeholder="Type name or code..." oninput="onCountSearch(this.value)" autocomplete="off">' +
+        '<div class="sdrop" id="count-drop" style="display:none;"></div>' +
+      '</div>' +
+      '<div class="sel-part" id="count-sel" style="display:none;">' +
+        '<div class="sel-id"   id="count-sel-id"></div>' +
+        '<div class="sel-name" id="count-sel-name"></div>' +
+        '<div class="sel-info" id="count-sel-info"></div>' +
+      '</div>' +
+      '<div class="form-group">' +
+        '<label class="form-label">Actual Count</label>' +
+        '<input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0">' +
+      '</div>' +
+      '<button class="submit-btn green-btn" id="count-submit" onclick="submitCountEntry()">✅ Save Count</button>' +
+      '</div>';
+  }
+
+  // Counted parts list
+  if (progress.success && progress.entries && progress.entries.length > 0) {
+    html += '<div class="section-title">✅ Counted Parts (' + progress.entries.length + ')</div>';
+    progress.entries.forEach(function(e) {
+      html += '<div class="count-card counted">' +
+        '<div class="part-header">' +
+          '<span class="part-id">'+e.id+'</span>' +
+          '<span class="part-sep"> — </span>' +
+          '<span class="part-name">'+e.name+'</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div class="count-qty-show">'+e.actualCount+'</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div>' +
+            '<div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>' +
+            (e.lastEditedBy ? '<div style="font-size:10px;color:var(--muted);">Edited by '+e.lastEditedBy+'</div>' : '') +
+          '</div>' +
+        '</div></div>';
+    });
+  }
+
+  document.getElementById('count-content').innerHTML = html;
+}
+
+function onCountSearch(q) {
+  var drop = document.getElementById('count-drop');
+  if (!q||q.length<2) { drop.style.display='none'; return; }
+  var ql = q.toLowerCase();
+  var matches = S.countParts.filter(function(p){
+    return p.name.toLowerCase().indexOf(ql)!==-1 || p.id.toLowerCase().indexOf(ql)!==-1;
+  }).slice(0,8);
+  if (matches.length===0) { drop.style.display='none'; return; }
+
+  drop.innerHTML = matches.map(function(p){
+    var alreadyCounted = p.counted ? ' ✅ '+p.countedBy : '';
+    return '<div class="sdrop-item" onclick="selectCountPart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+p.counted+',\''+p.countedBy+'\','+JSON.stringify(p.actualCount)+')">' +
+      '<div class="sdrop-id">'+p.id+'</div>' +
+      '<div class="sdrop-name">'+p.name+'</div>' +
+      '<div class="sdrop-meta">'+(p.counted ? '✅ Counted by '+p.countedBy+' — qty: '+p.actualCount : '⬜ Not counted yet')+alreadyCounted+'</div>' +
+      '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectCountPart(id, name, counted, countedBy, actualCount) {
+  S.countSelected = { id:id, name:name, counted:counted, countedBy:countedBy, actualCount:actualCount };
+  document.getElementById('count-search-input').value = id + ' — ' + name;
+  document.getElementById('count-drop').style.display = 'none';
+  document.getElementById('count-sel').style.display = 'block';
+  document.getElementById('count-sel-id').textContent   = id;
+  document.getElementById('count-sel-name').textContent = name;
+
+  if (counted) {
+    document.getElementById('count-sel-info').textContent = '✅ Already counted by ' + countedBy + ' — qty: ' + actualCount;
+    document.getElementById('count-qty').value = actualCount;
+  } else {
+    document.getElementById('count-sel-info').textContent = '⬜ Not counted yet';
+    document.getElementById('count-qty').value = '';
+  }
+}
+
+function startCountQR() {
+  var code = prompt('📷 Enter Item Code from QR scan:');
+  if (!code) return;
+  code = code.trim();
+  var part = S.countParts.find(function(p){ return p.id === code; });
+  if (part) {
+    selectCountPart(part.id, part.name, part.counted, part.countedBy, part.actualCount);
+    showToast('✅ Part found!', 'success');
+  } else {
+    showToast('❌ Item Code not found: ' + code, 'error');
+  }
+}
+
+function submitCountEntry() {
+  if (!S.countSelected) { showToast('Please select a part first', 'error'); return; }
+  var qty = document.getElementById('count-qty').value;
+  if (qty === '' || qty === null) { showToast('Please enter actual count', 'error'); return; }
+  qty = parseInt(qty);
+  if (isNaN(qty) || qty < 0) { showToast('Please enter a valid number', 'error'); return; }
+
+  // Check if already counted by someone else
+  if (S.countSelected.counted && S.countSelected.countedBy !== S.user.name) {
+    S.overridePending = { itemCode: S.countSelected.id, qty: qty };
+    document.getElementById('override-text').innerHTML =
+      'This part was already counted by <strong>' + S.countSelected.countedBy +
+      '</strong> with qty <strong>' + S.countSelected.actualCount +
+      '</strong>.<br><br>Do you want to override with your count of <strong>' + qty + '</strong>?';
+    document.getElementById('override-modal').classList.add('show');
+    return;
+  }
+
+  saveCount(S.countSelected.id, qty);
+}
+
+function closeOverrideModal() {
+  document.getElementById('override-modal').classList.remove('show');
+  S.overridePending = null;
+}
+
+function confirmOverride() {
+  document.getElementById('override-modal').classList.remove('show');
+  if (S.overridePending) {
+    saveCount(S.overridePending.itemCode, S.overridePending.qty);
+    S.overridePending = null;
+  }
+}
+
+function saveCount(itemCode, qty) {
+  var btn = document.getElementById('count-submit');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  api({ action: 'submitCount', pin: S.user.pin, itemCode: itemCode, actualCount: qty })
+    .then(function(r){
+      if (r.success) {
+        showToast('✅ Count saved!', 'success');
+        S.countSelected = null;
+        document.getElementById('count-search-input').value = '';
+        document.getElementById('count-sel').style.display  = 'none';
+        document.getElementById('count-qty').value = '';
+        document.getElementById('count-drop').style.display = 'none';
+        // Refresh count screen
+        loadCountScreen();
+      } else {
+        showToast('❌ ' + r.error, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = '✅ Save Count';
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// STOCK SCREEN
+// ═══════════════════════════════════════════════════════════
+function renderStock() {
+  filterStock();
+}
+
+function filterStock() {
+  var q      = (document.getElementById('stock-search').value||'').toLowerCase();
+  var filter = S.stockFilter;
+  var list   = S.parts.filter(function(p){
+    var matchQ = !q || p.name.toLowerCase().indexOf(q)!==-1 || p.id.toLowerCase().indexOf(q)!==-1;
+    var matchF = filter==='all' ||
+      (filter==='low'      && (p.stocksLow||p.mechanicLow)) ||
+      (filter==='stocks'   && (p.stocksRemaining||0)>0) ||
+      (filter==='mechanic' && (p.mechanicRemaining||0)>0);
+    return matchQ && matchF;
+  });
+
+  document.getElementById('stock-count').textContent = list.length + ' parts';
+
+  if (list.length===0) {
+    document.getElementById('stock-content').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>';
+    return;
+  }
+  document.getElementById('stock-content').innerHTML = list.map(partCard).join('');
+}
+
+function setStockFilter(f, btn) {
+  S.stockFilter = f;
+  document.querySelectorAll('.ftab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  filterStock();
+}
+
+function partCard(p) {
+  var low  = p.stocksLow || p.mechanicLow;
+  var sVal = p.stocksRemaining   || 0;
+  var mVal = p.mechanicRemaining || 0;
+  var sCls = p.stocksLow   ? 'low-qty' : 'stocks-qty';
+  var mCls = p.mechanicLow ? 'low-qty' : 'mechanic-qty';
+  return '<div class="part-card '+(low?'low':'ok')+'">' +
+    '<div class="part-header">' +
+      '<span class="part-id">'+p.id+'</span>' +
+      '<span class="part-sep"> — </span>' +
+      '<span class="part-name">'+p.name+'</span>' +
+    '</div>' +
+    '<div class="part-stocks">' +
+      '<div class="stock-box"><div class="stock-lbl">📦 Stocks</div><div class="stock-val '+sCls+'">'+sVal+'</div></div>' +
+      '<div class="stock-box"><div class="stock-lbl">🔧 Mechanic</div><div class="stock-val '+mCls+'">'+mVal+'</div></div>' +
+      '<div class="stock-box"><div class="stock-lbl">📊 Total</div><div class="stock-val total-qty">'+(sVal+mVal)+'</div></div>' +
+    '</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOG SCREEN
+// ═══════════════════════════════════════════════════════════
+function initLog() {
+  var today = new Date();
+  document.getElementById('log-date').value =
+    today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+}
+
+function onLogTypeChange() {
+  var t = document.getElementById('log-type').value;
+  document.getElementById('log-city-group').style.display =
+    (t==='Sent to other city'||t==='Received from other city') ? 'block' : 'none';
+}
+
+function onLogSearch(q) {
+  var drop = document.getElementById('log-drop');
+  if (!q||q.length<2) { drop.style.display='none'; return; }
+  var ql = q.toLowerCase();
+  var matches = S.parts.filter(function(p){
+    return p.name.toLowerCase().indexOf(ql)!==-1 || p.id.toLowerCase().indexOf(ql)!==-1;
+  }).slice(0,8);
+  if (matches.length===0) { drop.style.display='none'; return; }
+  drop.innerHTML = matches.map(function(p){
+    return '<div class="sdrop-item" onclick="selectLogPart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+(p.stocksRemaining||0)+','+(p.mechanicRemaining||0)+')">' +
+      '<div class="sdrop-id">'+p.id+'</div>' +
+      '<div class="sdrop-name">'+p.name+'</div>' +
+      '<div class="sdrop-meta">📦 Stock: '+(p.stocksRemaining||0)+' | 🔧 Mechanic: '+(p.mechanicRemaining||0)+'</div>' +
+      '</div>';
+  }).join('');
+  drop.style.display = 'block';
+}
+
+function selectLogPart(id, name, stocks, mechanic) {
+  S.logSelected = { id:id, name:name, stocks:stocks, mechanic:mechanic };
+  document.getElementById('log-search').value = id+' — '+name;
+  document.getElementById('log-drop').style.display  = 'none';
+  document.getElementById('log-sel').style.display   = 'block';
+  document.getElementById('log-sel-id').textContent   = id;
+  document.getElementById('log-sel-name').textContent = name;
+  document.getElementById('log-sel-info').textContent = '📦 Stocks: '+stocks+' | 🔧 Mechanic: '+mechanic;
+}
+
+function startQRScan() {
+  var code = prompt('📷 Enter Item Code from QR scan:');
+  if (!code) return;
+  code = code.trim();
+  var part = S.parts.find(function(p){ return p.id===code; });
+  if (part) {
+    selectLogPart(part.id, part.name, part.stocksRemaining||0, part.mechanicRemaining||0);
+    showToast('✅ Part found!', 'success');
+  } else {
+    showToast('❌ Not found: '+code, 'error');
+  }
+}
+
+function submitLog() {
+  if (!S.logSelected) { showToast('Please select a part', 'error'); return; }
+  var date = document.getElementById('log-date').value;
+  var type = document.getElementById('log-type').value;
+  var qty  = parseInt(document.getElementById('log-qty').value);
+  var city = document.getElementById('log-city').value;
+  var note = document.getElementById('log-notes').value;
+
+  if (!date) { showToast('Please select a date', 'error'); return; }
+  if (!type) { showToast('Please select movement type', 'error'); return; }
+  if (!qty||qty<=0) { showToast('Please enter valid quantity', 'error'); return; }
+
+  var btn = document.getElementById('log-submit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  api({
+    action: 'logMovement',
+    pin:    S.user.pin,
+    date:   date,
+    itemID: S.logSelected.id,
+    name:   S.logSelected.name,
+    type:   type,
+    qty:    qty,
+    city:   city || '',
+    notes:  note || ''
+  }).then(function(r){
+    if (r.success) {
+      showToast('✅ Movement logged!', 'success');
+      S.logSelected = null;
+      S.parts = [];
+      document.getElementById('log-search').value  = '';
+      document.getElementById('log-sel').style.display = 'none';
+      document.getElementById('log-type').value  = '';
+      document.getElementById('log-qty').value   = '';
+      document.getElementById('log-city').value  = '';
+      document.getElementById('log-notes').value = '';
+      document.getElementById('log-city-group').style.display = 'none';
+      loadDashboardData(function(){});
+    } else {
+      showToast('❌ ' + r.error, 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Submit Movement';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════
+function renderHistory() {
+  var q    = (document.getElementById('hist-search').value||'').toLowerCase();
+  var list = S.movements.filter(function(m){
+    return !q || m.name.toLowerCase().indexOf(q)!==-1 ||
+      m.type.toLowerCase().indexOf(q)!==-1 || m.date.indexOf(q)!==-1;
+  });
+  if (list.length===0) {
+    document.getElementById('hist-content').innerHTML = '<div class="empty"><div class="empty-icon">📋</div>No movements found</div>';
+    return;
+  }
+  document.getElementById('hist-content').innerHTML = list.map(movCard).join('');
+}
+
+function movCard(m) {
+  var cls = 'transfer';
+  if (m.type==='Incoming from supplier')   cls='incoming';
+  if (m.type==='Sent to other city')       cls='sent';
+  if (m.type==='Received from other city') cls='received';
+  var clr = cls==='incoming'?'var(--green)':cls==='sent'?'var(--red)':cls==='received'?'var(--blue)':'var(--orange)';
+  return '<div class="mov-card '+cls+'">' +
+    '<div class="mov-top"><span class="mov-type" style="color:'+clr+';">'+m.type+'</span><span class="mov-qty">×'+m.qty+'</span></div>' +
+    '<div class="mov-name"><span style="color:var(--blue);font-weight:700;">'+(m.itemID||'')+'</span> — '+m.name+'</div>' +
+    '<div class="mov-meta">📅 '+m.date+(m.city?' | 📍 '+m.city:'')+'</div>' +
+    '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════════
+function renderAlerts() {
+  var low = S.parts.filter(function(p){ return p.stocksLow||p.mechanicLow; });
+  if (low.length===0) {
+    document.getElementById('alerts-content').innerHTML = '<div class="empty"><div class="empty-icon">✅</div>All stock levels are good!</div>';
+    return;
+  }
+  var html = '<div class="section-title">⚠️ '+low.length+' parts need attention</div>';
+  html += low.map(function(p){
+    return '<div class="alert-card">' +
+      '<div class="alert-name"><span style="color:var(--blue);font-weight:700;">'+p.id+'</span> — '+p.name+'</div>' +
+      (p.stocksLow   ? '<div class="alert-row"><span>📦 Stocks</span><span class="alert-val">'+p.stocksRemaining+' (min: '+p.minStocks+')</span></div>' : '') +
+      (p.mechanicLow ? '<div class="alert-row"><span>🔧 Mechanic</span><span class="alert-val">'+p.mechanicRemaining+' (min: '+p.minMechanic+')</span></div>' : '') +
+      '</div>';
+  }).join('');
+  document.getElementById('alerts-content').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent   = msg;
+  t.className     = 'toast '+(type||'');
+  t.style.display = 'block';
+  setTimeout(function(){ t.style.display='none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLOSE DROPDOWNS
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#count-search-input') && !e.target.closest('#count-drop')) {
+    var d = document.getElementById('count-drop');
+    if (d) d.style.display = 'none';
+  }
+  if (!e.target.closest('#log-search') && !e.target.closest('#log-drop')) {
+    var d = document.getElementById('log-drop');
+    if (d) d.style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>
