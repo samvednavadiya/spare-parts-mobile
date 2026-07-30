@@ -66,6 +66,13 @@
     .filter-row::-webkit-scrollbar { display:none; }
     .ftab { padding:6px 16px; border-radius:20px; border:1px solid var(--border); background:white; font-size:13px; cursor:pointer; white-space:nowrap; font-family:inherit; }
     .ftab.active { background:var(--blue); color:white; border-color:var(--blue); }
+
+    /* Count tabs */
+    .count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .count-tab  { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
+    .count-tab.active { background:var(--blue); color:white; }
+    .count-tab.green-tab.active { background:var(--green); color:white; }
+
     .part-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--border); }
     .part-card.ok  { border-left-color:var(--green); }
     .part-card.low { border-left-color:var(--red); }
@@ -81,9 +88,17 @@
     .mechanic-qty { color:#6a1b9a; background:#f3e5f5; }
     .total-qty    { color:#e65100; background:#fff3e0; }
     .low-qty      { color:white; background:var(--red); }
+
+    /* Counted card */
     .count-card         { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .count-card.counted { border-left:4px solid var(--green); }
+    .count-card.pending { border-left:4px solid #e0e0e0; }
     .count-qty-show     { font-size:28px; font-weight:700; color:var(--blue); }
+
+    /* Pending count button */
+    .count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
+    .count-now-btn:active { opacity:0.8; }
+
     .form-card  { background:white; border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:12px; }
     .form-group { margin-bottom:16px; }
     .form-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
@@ -309,10 +324,7 @@
     <button class="qr-btn" onclick="startQRScan('storage')">📷 Scan QR Code on Box</button>
     <div class="form-group" style="position:relative;">
       <label class="form-label">Search Spare Part</label>
-      <input type="text" class="form-input" id="storage-search"
-             placeholder="Type name or code..."
-             oninput="onStorageSearch(this.value)"
-             autocomplete="off">
+      <input type="text" class="form-input" id="storage-search" placeholder="Type name or code..." oninput="onStorageSearch(this.value)" autocomplete="off">
       <div class="sdrop" id="storage-drop" style="display:none;"></div>
     </div>
     <div class="sel-part" id="storage-sel" style="display:none;">
@@ -324,9 +336,7 @@
       <label class="form-label">📦 Storage Area Qty</label>
       <input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0">
     </div>
-    <button class="submit-btn green-btn" id="storage-submit" onclick="submitStorageQty()">
-      ✅ Save Storage Qty
-    </button>
+    <button class="submit-btn green-btn" id="storage-submit" onclick="submitStorageQty()">✅ Save Storage Qty</button>
   </div>
   <div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
 </div>
@@ -342,33 +352,26 @@ var S = {
   stockFilter:'all', logSelected:null, storageSelected:null,
   countSelected:null, overridePending:null,
   session:{status:'inactive'}, storageCount:0,
-  autoRefreshTimer:null, qrActive:false, qrMode:null, qrReader:null
+  autoRefreshTimer:null, qrActive:false, qrMode:null, qrReader:null,
+  countTab:'pending' // default tab
 };
 
 // ═══════════════════════════════════════════════════════════
-// LOCAL STORAGE SESSION — stays logged in all day
+// LOCAL STORAGE SESSION
 // ═══════════════════════════════════════════════════════════
 function saveSession(user) {
-  var today = new Date().toDateString();
-  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:today})); } catch(e) {}
+  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:new Date().toDateString()})); } catch(e) {}
 }
-
 function loadSession() {
   try {
     var raw = localStorage.getItem('sparePartsSession');
     if (!raw) return null;
     var data = JSON.parse(raw);
-    if (data.date !== new Date().toDateString()) {
-      localStorage.removeItem('sparePartsSession');
-      return null;
-    }
+    if (data.date !== new Date().toDateString()) { localStorage.removeItem('sparePartsSession'); return null; }
     return data.user;
   } catch(e) { return null; }
 }
-
-function clearSession() {
-  try { localStorage.removeItem('sparePartsSession'); } catch(e) {}
-}
+function clearSession() { try { localStorage.removeItem('sparePartsSession'); } catch(e) {} }
 
 // ═══════════════════════════════════════════════════════════
 // API
@@ -377,9 +380,7 @@ function api(params) {
   var url = API_URL + '?' + Object.keys(params).map(function(k){
     return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
   }).join('&');
-  return fetch(url)
-    .then(function(r){ return r.json(); })
-    .catch(function(e){ return {success:false,error:e.message}; });
+  return fetch(url).then(function(r){ return r.json(); }).catch(function(e){ return {success:false,error:e.message}; });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -387,9 +388,9 @@ function api(params) {
 // ═══════════════════════════════════════════════════════════
 function startQRScan(mode) {
   S.qrMode = mode;
-  var header = mode==='count' ? '📷 Scan Part QR Code' :
-               mode==='storage' ? '📷 Scan Storage QR Code' : '📷 Scan Part QR Code';
-  document.getElementById('qr-header').textContent = header;
+  document.getElementById('qr-header').textContent =
+    mode==='count' ? '📷 Scan Part QR Code' :
+    mode==='storage' ? '📷 Scan Storage QR Code' : '📷 Scan Part QR Code';
   document.getElementById('qr-status').textContent = 'Initializing camera...';
   document.getElementById('qr-overlay').classList.add('show');
   S.qrActive = true;
@@ -418,7 +419,6 @@ function initZXing() {
         if (!S.qrActive) return;
         if (result) {
           var code = result.getText().trim();
-          document.getElementById('qr-status').textContent = '✅ Scanned: ' + code;
           stopQRScan();
           handleQRResult(code);
         } else if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -428,9 +428,7 @@ function initZXing() {
         }
       }
     );
-  } catch(e) {
-    document.getElementById('qr-status').textContent = '❌ Camera error: ' + e.message;
-  }
+  } catch(e) { document.getElementById('qr-status').textContent = '❌ Camera error: ' + e.message; }
 }
 
 function stopQRScan() {
@@ -438,33 +436,30 @@ function stopQRScan() {
   if (S.qrReader) { try { S.qrReader.reset(); } catch(e) {} S.qrReader = null; }
   document.getElementById('qr-overlay').classList.remove('show');
   var video = document.getElementById('qr-video');
-  if (video && video.srcObject) {
-    video.srcObject.getTracks().forEach(function(t){ t.stop(); });
-    video.srcObject = null;
-  }
+  if (video && video.srcObject) { video.srcObject.getTracks().forEach(function(t){ t.stop(); }); video.srcObject = null; }
 }
 
 function handleQRResult(code) {
-  if (S.qrMode === 'count') {
+  if (S.qrMode==='count') {
     var part = S.countParts.find(function(p){ return p.id===code; });
     if (part) {
+      // Switch to count form tab and select part
+      S.countTab = 'form';
       selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);
       showToast('✅ Found: '+part.name,'success');
       setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },300);
     } else { showToast('❌ Not found: '+code,'error'); }
-  } else if (S.qrMode === 'storage') {
+  } else if (S.qrMode==='storage') {
     var part = S.parts.find(function(p){ return p.id===code; });
     if (part) {
       selectStoragePart(part.id,part.name,part.storageRemaining||0);
       showToast('✅ Found: '+part.name,'success');
       setTimeout(function(){ var q=document.getElementById('storage-qty'); if(q) q.focus(); },300);
     } else { showToast('❌ Not found: '+code,'error'); }
-  } else if (S.qrMode === 'log') {
+  } else if (S.qrMode==='log') {
     var part = S.parts.find(function(p){ return p.id===code; });
-    if (part) {
-      selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0);
-      showToast('✅ Found: '+part.name,'success');
-    } else { showToast('❌ Not found: '+code,'error'); }
+    if (part) { selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0); showToast('✅ Found: '+part.name,'success'); }
+    else { showToast('❌ Not found: '+code,'error'); }
   }
 }
 
@@ -475,44 +470,38 @@ function doLogin() {
   var pin = document.getElementById('pin-input').value.trim();
   if (!pin) { showPinError('Please enter your PIN'); return; }
   var btn = document.getElementById('login-btn');
-  btn.disabled = true; btn.textContent = 'Checking...';
-  document.getElementById('pin-error').textContent = '';
+  btn.disabled=true; btn.textContent='Checking...';
+  document.getElementById('pin-error').textContent='';
   api({action:'verifyPin',pin:pin}).then(function(r){
-    if (r.success) {
-      r.pin = pin;
-      saveSession(r);
-      startApp(r);
-    } else {
-      showPinError('Invalid PIN. Please try again.');
-      document.getElementById('pin-input').value = '';
-    }
-    btn.disabled = false; btn.textContent = 'Login';
+    if (r.success) { r.pin=pin; saveSession(r); startApp(r); }
+    else { showPinError('Invalid PIN. Please try again.'); document.getElementById('pin-input').value=''; }
+    btn.disabled=false; btn.textContent='Login';
   });
 }
 
 function startApp(user) {
-  S.user = user;
+  S.user=user;
   buildNav();
   loadDashboardData(function(){
-    document.getElementById('screen-login').style.display = 'none';
-    document.getElementById('bottom-nav').style.display   = 'flex';
+    document.getElementById('screen-login').style.display='none';
+    document.getElementById('bottom-nav').style.display='flex';
     showScreen('home', document.getElementById('nav-home'));
     startAutoRefresh();
   });
 }
 
-function showPinError(msg) { document.getElementById('pin-error').textContent = msg; }
+function showPinError(msg) { document.getElementById('pin-error').textContent=msg; }
 
 function logout() {
   clearSession();
-  S.user = null; S.parts = []; S.movements = [];
+  S.user=null; S.parts=[]; S.movements=[];
   stopQRScan();
   if (S.autoRefreshTimer) clearInterval(S.autoRefreshTimer);
-  document.getElementById('pin-input').value = '';
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('bottom-nav').style.display = 'none';
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').textContent='';
+  document.getElementById('bottom-nav').style.display='none';
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('screen-login').style.display = 'flex';
+  document.getElementById('screen-login').style.display='flex';
   document.getElementById('screen-login').classList.add('active');
 }
 
@@ -525,50 +514,55 @@ function startAutoRefresh() {
     if (!S.user) return;
     api({action:'getDashboard',pin:S.user.pin}).then(function(d){
       if (!d.success) return;
-      S.parts     = d.parts     || [];
-      S.movements = d.movements || [];
-      S.session   = d.session   || S.session;
-      var active = document.querySelector('.screen.active');
+      S.parts=d.parts||[]; S.movements=d.movements||[]; S.session=d.session||S.session;
+      var active=document.querySelector('.screen.active');
       if (!active) return;
-      var name = active.id.replace('screen-','');
+      var name=active.id.replace('screen-','');
       if (name==='home')    renderHome();
       if (name==='stock')   filterStock();
       if (name==='alerts')  renderAlerts();
       if (name==='history') renderHistory();
       if (name==='count') {
-        api({action:'getProgress'}).then(function(p){
-          if (p.success) updateProgressSilently(p);
-        });
+        api({action:'getProgress'}).then(function(p){ if (p.success) { updateCountParts(p); updateProgressSilently(p); } });
       }
     });
   }, 30000);
 }
 
 function updateProgressSilently(progress) {
-  var bar  = document.getElementById('prog-fill');
-  var pctEl= document.getElementById('prog-pct');
-  var txt  = document.getElementById('prog-text');
-  var pct  = progress.percentage||0;
-  if (bar)   bar.style.width   = pct+'%';
-  if (pctEl) pctEl.textContent = pct+'%';
-  if (txt)   txt.textContent   = progress.countedParts+' of '+progress.totalParts+' parts counted';
+  var pct=progress.percentage||0;
+  var bar=document.getElementById('prog-fill'), pctEl=document.getElementById('prog-pct'), txt=document.getElementById('prog-text');
+  if (bar)   bar.style.width=pct+'%';
+  if (pctEl) pctEl.textContent=pct+'%';
+  if (txt)   txt.textContent=progress.countedParts+' of '+progress.totalParts+' parts counted';
+}
+
+function updateCountParts(progress) {
+  // Update countParts counted status silently
+  if (!progress.entries) return;
+  var countedMap = {};
+  progress.entries.forEach(function(e){ countedMap[e.id]=e; });
+  S.countParts.forEach(function(p){
+    if (countedMap[p.id]) {
+      p.counted=true; p.actualCount=countedMap[p.id].actualCount;
+      p.countedBy=countedMap[p.id].countedBy; p.countedAt=countedMap[p.id].countedAt;
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
 // BUILD NAV
 // ═══════════════════════════════════════════════════════════
 function buildNav() {
-  var nav = document.getElementById('bottom-nav');
-  var p   = S.user.permissions;
-  var r   = S.user.role;
-  var html = navBtn('home','🏠','Home',true);
-  if (r==='Manager'||p.count)          html += navBtn('count',  '🔢','Count',  false);
-  if (r==='Manager'||p.stock)          html += navBtn('stock',  '📦','Stock',  false);
-  if (r==='Manager'||p.log)            html += navBtn('log',    '➕','Log',    false);
-  if (r==='Manager'||p.history)        html += navBtn('history','📋','History',false);
-  if (r==='Manager'||p.alerts)         html += navBtn('alerts', '🔔','Alerts', false);
-  if (r==='Manager'||p.storageOpening) html += navBtn('storage','📥','Storage',false);
-  nav.innerHTML = html;
+  var nav=document.getElementById('bottom-nav'), p=S.user.permissions, r=S.user.role;
+  var html=navBtn('home','🏠','Home',true);
+  if (r==='Manager'||p.count)          html+=navBtn('count',  '🔢','Count',  false);
+  if (r==='Manager'||p.stock)          html+=navBtn('stock',  '📦','Stock',  false);
+  if (r==='Manager'||p.log)            html+=navBtn('log',    '➕','Log',    false);
+  if (r==='Manager'||p.history)        html+=navBtn('history','📋','History',false);
+  if (r==='Manager'||p.alerts)         html+=navBtn('alerts', '🔔','Alerts', false);
+  if (r==='Manager'||p.storageOpening) html+=navBtn('storage','📥','Storage',false);
+  nav.innerHTML=html;
 }
 
 function navBtn(id,icon,label,active){
@@ -607,26 +601,26 @@ function loadDashboardData(cb){
 // HOME
 // ═══════════════════════════════════════════════════════════
 function renderHome(){
-  var low      = S.parts.filter(function(p){ return p.storageLow||p.mechanicLow; }).length;
-  var total    = S.parts.length;
-  var todayUse = S.parts.reduce(function(s,p){ return s+(p.todayUsed||0); },0);
-  var inStorage= S.parts.filter(function(p){ return (p.storageRemaining||0)>0; }).length;
-  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'+
+  var low=S.parts.filter(function(p){ return p.storageLow||p.mechanicLow; }).length;
+  var total=S.parts.length;
+  var todayUse=S.parts.reduce(function(s,p){ return s+(p.todayUsed||0); },0);
+  var inStorage=S.parts.filter(function(p){ return (p.storageRemaining||0)>0; }).length;
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'+
     '<div><div style="font-size:18px;font-weight:700;">Welcome, '+S.user.name+' 👋</div>'+
     '<div style="font-size:13px;color:var(--muted);">'+S.user.role+' <span class="live-badge">● LIVE</span></div></div>'+
     '<button class="logout-btn" style="background:rgba(0,0,0,0.08);color:var(--text);" onclick="logout()">Logout</button></div>';
-  html += '<div class="cards-grid">';
-  html += statCard('Total Parts',total,'blue');
-  html += statCard('Low Stock',low,'red');
-  html += statCard('Used Today',todayUse,'orange');
-  html += statCard('In Storage',inStorage,'green');
-  html += '</div>';
-  html += sessionStatusHTML();
-  if (S.user.role==='Manager') html += managerButtons();
-  html += '<div class="section-title">📋 Recent Movements</div>';
+  html+='<div class="cards-grid">';
+  html+=statCard('Total Parts',total,'blue');
+  html+=statCard('Low Stock',low,'red');
+  html+=statCard('Used Today',todayUse,'orange');
+  html+=statCard('In Storage',inStorage,'green');
+  html+='</div>';
+  html+=sessionStatusHTML();
+  if (S.user.role==='Manager') html+=managerButtons();
+  html+='<div class="section-title">📋 Recent Movements</div>';
   if (S.movements.length>0){ S.movements.slice(0,5).forEach(function(m){ html+=movCard(m); }); }
   else { html+='<div class="empty"><div class="empty-icon">📋</div>No movements yet</div>'; }
-  document.getElementById('home-content').innerHTML = html;
+  document.getElementById('home-content').innerHTML=html;
 }
 
 function statCard(label,val,color){
@@ -644,10 +638,7 @@ function managerButtons(){
   var s=S.session; var html='<div class="mgr-btn-row">';
   if (s.status==='inactive') html+='<button class="mgr-btn start" onclick="managerStartCount()">▶️ Start Count</button>';
   if (s.status==='active')   html+='<button class="mgr-btn lock"  onclick="managerLockCount()">🔒 Lock Count</button>';
-  if (s.status==='locked'){
-    html+='<button class="mgr-btn unlock" onclick="managerUnlockCount()">🔓 Unlock</button>';
-    html+='<button class="mgr-btn start"  onclick="managerStartCount()">🔄 New Count</button>';
-  }
+  if (s.status==='locked'){ html+='<button class="mgr-btn unlock" onclick="managerUnlockCount()">🔓 Unlock</button><button class="mgr-btn start" onclick="managerStartCount()">🔄 New Count</button>'; }
   return html+'</div>';
 }
 
@@ -691,19 +682,26 @@ function renderCountScreen(progress){
   var s=S.session; var html='';
   html+=sessionStatusHTML();
   if (S.user.role==='Manager') html+=managerButtons();
+
   if (s.status!=='inactive'&&progress.success){
     var pct=progress.percentage||0;
+    var counted=progress.countedParts||0;
+    var total=progress.totalParts||0;
+    var pending=total-counted;
     html+='<div class="progress-wrap">'+
       '<div class="progress-top"><span class="progress-label">Count Progress</span><span class="progress-pct" id="prog-pct">'+pct+'%</span></div>'+
       '<div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:'+pct+'%"></div></div>'+
-      '<div style="font-size:12px;color:var(--muted);margin-top:6px;" id="prog-text">'+(progress.countedParts||0)+' of '+(progress.totalParts||0)+' parts counted</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-top:6px;" id="prog-text">'+counted+' of '+total+' parts counted — '+pending+' remaining</div>'+
       '</div>';
   }
+
   if (s.status==='inactive'){
     if (S.user.role!=='Manager') html+='<div class="empty"><div class="empty-icon">⏸️</div>No active count session.<br>Ask manager to start.</div>';
     document.getElementById('count-content').innerHTML=html; return;
   }
-  html+='<div class="form-card">'+
+
+  // Count form
+  html+='<div class="form-card" id="count-form-card">'+
     '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>'+
     '<button class="qr-btn" onclick="startQRScan(\'count\')">📷 Scan QR Code</button>'+
     '<div class="form-group" style="position:relative;">'+
@@ -722,9 +720,47 @@ function renderCountScreen(progress){
     '</div>'+
     '<button class="submit-btn green-btn" id="count-submit" onclick="submitCountEntry()">✅ Save Count</button>'+
     '</div>';
-  if (progress.success&&progress.entries&&progress.entries.length>0){
-    html+='<div class="section-title">✅ Counted Parts ('+progress.entries.length+') <span class="live-badge">● LIVE</span></div>';
-    progress.entries.forEach(function(e){
+
+  // Two tabs — Pending and Counted
+  var countedParts = progress.success&&progress.entries ? progress.entries : [];
+  var pendingParts  = S.countParts.filter(function(p){ return !p.counted; });
+
+  html+='<div class="count-tabs">'+
+    '<button class="count-tab '+(S.countTab==='pending'?'active':'')+'" onclick="switchCountTab(\'pending\')">⬜ Pending ('+pendingParts.length+')</button>'+
+    '<button class="count-tab green-tab '+(S.countTab==='counted'?'active':'')+'" onclick="switchCountTab(\'counted\')">✅ Counted ('+countedParts.length+')</button>'+
+    '</div>';
+
+  // Pending list
+  html+='<div id="count-pending-list" style="display:'+(S.countTab==='pending'?'block':'none')+';">';
+  if (pendingParts.length===0){
+    html+='<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>';
+  } else {
+    // Search for pending
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="pending-search" placeholder="Search pending parts..." oninput="filterPendingList()"></div>';
+    html+='<div id="pending-list-items">';
+    pendingParts.forEach(function(p){
+      html+='<div class="count-card pending">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+          '<div class="part-header" style="margin-bottom:0;flex:1;">'+
+            '<span class="part-id">'+p.id+'</span>'+
+            '<span class="part-sep"> — </span>'+
+            '<span class="part-name">'+p.name+'</span>'+
+          '</div>'+
+          '<button class="count-now-btn" onclick="selectAndCount(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\')">Count →</button>'+
+        '</div></div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+
+  // Counted list
+  html+='<div id="count-counted-list" style="display:'+(S.countTab==='counted'?'block':'none')+';">';
+  if (countedParts.length===0){
+    html+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.<br>Start scanning!</div>';
+  } else {
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="counted-search" placeholder="Search counted parts..." oninput="filterCountedList()"></div>';
+    html+='<div id="counted-list-items">';
+    countedParts.forEach(function(e){
       html+='<div class="count-card counted">'+
         '<div class="part-header"><span class="part-id">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name">'+e.name+'</span></div>'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'+
@@ -736,10 +772,57 @@ function renderCountScreen(progress){
           '</div>'+
         '</div></div>';
     });
-  } else {
-    html+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.<br>Start scanning!</div>';
+    html+='</div>';
   }
+  html+='</div>';
+
   document.getElementById('count-content').innerHTML=html;
+}
+
+function switchCountTab(tab){
+  S.countTab=tab;
+  var pending=document.getElementById('count-pending-list');
+  var counted=document.getElementById('count-counted-list');
+  var tabs=document.querySelectorAll('.count-tab');
+  if (pending) pending.style.display=tab==='pending'?'block':'none';
+  if (counted) counted.style.display=tab==='counted'?'block':'none';
+  tabs.forEach(function(t,i){
+    t.classList.remove('active');
+    if ((i===0&&tab==='pending')||(i===1&&tab==='counted')) t.classList.add('active');
+  });
+}
+
+function filterPendingList(){
+  var q=(document.getElementById('pending-search').value||'').toLowerCase();
+  var items=document.getElementById('pending-list-items');
+  if (!items) return;
+  var cards=items.querySelectorAll('.count-card');
+  cards.forEach(function(card){
+    var text=card.textContent.toLowerCase();
+    card.style.display=(!q||text.indexOf(q)!==-1)?'block':'none';
+  });
+}
+
+function filterCountedList(){
+  var q=(document.getElementById('counted-search').value||'').toLowerCase();
+  var items=document.getElementById('counted-list-items');
+  if (!items) return;
+  var cards=items.querySelectorAll('.count-card');
+  cards.forEach(function(card){
+    var text=card.textContent.toLowerCase();
+    card.style.display=(!q||text.indexOf(q)!==-1)?'block':'none';
+  });
+}
+
+// Select from pending list and scroll to form
+function selectAndCount(id, name) {
+  var part = S.countParts.find(function(p){ return p.id===id; });
+  if (part) selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);
+  // Scroll to form
+  var formCard = document.getElementById('count-form-card');
+  if (formCard) formCard.scrollIntoView({behavior:'smooth', block:'start'});
+  // Focus qty
+  setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },400);
 }
 
 function onCountSearch(q){
@@ -761,13 +844,13 @@ function selectCountPart(id,name,counted,countedBy,actualCount){
   var inp=document.getElementById('count-search-input');
   var drop=document.getElementById('count-drop');
   var sel=document.getElementById('count-sel');
+  if (inp) inp.value=id+' — '+name;
+  if (drop) drop.style.display='none';
+  if (sel) sel.style.display='block';
   var selId=document.getElementById('count-sel-id');
   var selName=document.getElementById('count-sel-name');
   var selInfo=document.getElementById('count-sel-info');
   var qty=document.getElementById('count-qty');
-  if (inp) inp.value=id+' — '+name;
-  if (drop) drop.style.display='none';
-  if (sel) sel.style.display='block';
   if (selId) selId.textContent=id;
   if (selName) selName.textContent=name;
   if (selInfo) selInfo.textContent=counted?'✅ Already counted by '+countedBy+' — qty: '+actualCount:'⬜ Not counted yet';
@@ -792,10 +875,7 @@ function submitCountEntry(){
   saveCount(S.countSelected.id,qty);
 }
 
-function closeOverrideModal(){
-  document.getElementById('override-modal').classList.remove('show');
-  S.overridePending=null;
-}
+function closeOverrideModal(){ document.getElementById('override-modal').classList.remove('show'); S.overridePending=null; }
 
 function confirmOverride(){
   document.getElementById('override-modal').classList.remove('show');
@@ -816,38 +896,70 @@ function saveCount(itemCode,qty){
   if (drop)  drop.style.display='none';
   showToast('✅ Count saved! Next part...','success');
   if (inp) inp.focus();
-  // BACKGROUND save
+
+  // Update local countParts immediately
+  var localPart = S.countParts.find(function(p){ return p.id===savedCode; });
+  if (localPart) { localPart.counted=true; localPart.actualCount=savedQty; localPart.countedBy=S.user.name; }
+
+  // BACKGROUND save + refresh
   api({action:'submitCount',pin:S.user.pin,itemCode:savedCode,actualCount:savedQty})
     .then(function(r){
       if (!r.success){ showToast('❌ Failed: '+r.error,'error'); return; }
       api({action:'getProgress'}).then(function(progress){
         if (!progress.success) return;
         updateProgressSilently(progress);
-        var listHtml='<div class="section-title">✅ Counted Parts ('+progress.entries.length+') <span class="live-badge">● LIVE</span></div>';
-        if (progress.entries&&progress.entries.length>0){
-          progress.entries.forEach(function(e){
-            listHtml+='<div class="count-card counted">'+
-              '<div class="part-header"><span class="part-id">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name">'+e.name+'</span></div>'+
-              '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'+
-                '<div class="count-qty-show">'+e.actualCount+'</div>'+
-                '<div style="text-align:right;">'+
-                  '<div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div>'+
-                  '<div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+
-                  (e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+
-                '</div>'+
-              '</div></div>';
-          });
-        } else {
-          listHtml+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.</div>';
-        }
-        var cc=document.getElementById('count-content');
-        if (cc){
-          var toRemove=cc.querySelectorAll('.count-card,.section-title:last-of-type,.empty');
-          toRemove.forEach(function(el){ el.remove(); });
-          cc.insertAdjacentHTML('beforeend',listHtml);
-        }
+        // Refresh pending and counted lists
+        refreshCountLists(progress);
       });
     });
+}
+
+function refreshCountLists(progress) {
+  var countedParts = progress.entries || [];
+  var pendingParts = S.countParts.filter(function(p){ return !p.counted; });
+
+  // Update tab labels
+  var tabs=document.querySelectorAll('.count-tab');
+  if (tabs[0]) tabs[0].textContent='⬜ Pending ('+pendingParts.length+')';
+  if (tabs[1]) tabs[1].textContent='✅ Counted ('+countedParts.length+')';
+
+  // Refresh pending list
+  var pendingItems=document.getElementById('pending-list-items');
+  if (pendingItems) {
+    var html='';
+    pendingParts.forEach(function(p){
+      html+='<div class="count-card pending">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+          '<div class="part-header" style="margin-bottom:0;flex:1;">'+
+            '<span class="part-id">'+p.id+'</span>'+
+            '<span class="part-sep"> — </span>'+
+            '<span class="part-name">'+p.name+'</span>'+
+          '</div>'+
+          '<button class="count-now-btn" onclick="selectAndCount(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\')">Count →</button>'+
+        '</div></div>';
+    });
+    pendingItems.innerHTML = pendingParts.length > 0 ? html :
+      '<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>';
+  }
+
+  // Refresh counted list
+  var countedItems=document.getElementById('counted-list-items');
+  if (countedItems) {
+    var html='';
+    countedParts.forEach(function(e){
+      html+='<div class="count-card counted">'+
+        '<div class="part-header"><span class="part-id">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name">'+e.name+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">'+
+          '<div class="count-qty-show">'+e.actualCount+'</div>'+
+          '<div style="text-align:right;">'+
+            '<div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div>'+
+            '<div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+
+            (e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+
+          '</div>'+
+        '</div></div>';
+    });
+    countedItems.innerHTML=html;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -895,7 +1007,6 @@ function submitStorageQty(){
   qty=parseInt(qty);
   if (isNaN(qty)||qty<0){ showToast('Please enter a valid number','error'); return; }
   var savedId=S.storageSelected.id, savedName=S.storageSelected.name, savedQty=qty;
-  // INSTANT clear
   S.storageCount++;
   S.storageSelected=null;
   document.getElementById('storage-search').value='';
@@ -905,7 +1016,6 @@ function submitStorageQty(){
   document.getElementById('storage-progress').textContent=S.storageCount+' parts updated this session';
   showToast('✅ Saved! Next part...','success');
   document.getElementById('storage-search').focus();
-  // BACKGROUND save
   api({action:'updateStorageQty',pin:S.user.pin,itemCode:savedId,storageQty:savedQty})
     .then(function(r){
       if (!r.success) showToast('❌ Failed: '+savedName+': '+r.error,'error');
@@ -1076,13 +1186,11 @@ document.addEventListener('click',function(e){
 });
 
 // ═══════════════════════════════════════════════════════════
-// INIT — Check localStorage session on load
+// INIT
 // ═══════════════════════════════════════════════════════════
 window.onload = function(){
   var savedUser = loadSession();
-  if (savedUser) {
-    startApp(savedUser);
-  }
+  if (savedUser) { startApp(savedUser); }
 };
 
 // ═══════════════════════════════════════════════════════════
