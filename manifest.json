@@ -1,0 +1,22 @@
+{
+  "name": "Spare Parts Wolfsburg",
+  "short_name": "Spare Parts",
+  "description": "Spare Parts Inventory Management",
+  "start_url": "/spare-parts-mobile/",
+  "display": "standalone",
+  "background_color": "#1a73e8",
+  "theme_color": "#1a73e8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/samvednavadiya/spare-parts-mobile/main/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/samvednavadiya/spare-parts-mobile/main/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
