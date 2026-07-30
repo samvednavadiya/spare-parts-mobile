@@ -1147,6 +1147,14 @@ document.addEventListener('click', function(e){
     if (d) d.style.display = 'none';
   }
 });
+  // Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/spare-parts-mobile/sw.js')
+      .then(function(reg) { console.log('SW registered'); })
+      .catch(function(err) { console.log('SW error:', err); });
+  });
+}
 </script>
 </body>
 </html>
