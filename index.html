@@ -11,7 +11,6 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a73e8">
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/samvednavadiya/spare-parts-mobile/main/icon-192.png">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     :root {
@@ -20,7 +19,6 @@
     }
     body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; }
     .header { background:var(--blue); color:white; padding:16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-    .header-title { font-size:18px; font-weight:600; }
     .logout-btn { background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 12px; border-radius:20px; font-size:13px; cursor:pointer; font-family:inherit; }
     .bottom-nav { position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); }
     .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 4px 8px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:10px; font-family:inherit; transition:color 0.15s; }
@@ -153,12 +151,13 @@
     .storage-info-sub   { font-size:12px; color:#555; }
     .live-badge { display:inline-block; background:#e8f5e9; color:var(--green); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; animation:pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+    /* QR Scanner */
     .qr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; }
     .qr-overlay.show { display:flex; }
     .qr-header { color:white; font-size:18px; font-weight:600; margin-bottom:20px; text-align:center; padding:0 20px; }
-    .qr-video-wrap { position:relative; width:300px; height:300px; border-radius:16px; overflow:hidden; }
-    .qr-video { width:100%; height:100%; object-fit:cover; }
-    .qr-frame { position:absolute; inset:0; border:3px solid var(--blue); border-radius:16px; }
+    .qr-video-wrap { position:relative; width:300px; height:300px; border-radius:16px; overflow:hidden; background:#000; }
+    .qr-video { width:100%; height:100%; object-fit:cover; display:block; }
+    .qr-frame { position:absolute; inset:0; border:3px solid var(--blue); border-radius:16px; pointer-events:none; }
     .qr-line  { position:absolute; left:10%; right:10%; height:2px; background:var(--blue); animation:scan 2s linear infinite; box-shadow:0 0 8px var(--blue); }
     @keyframes scan { 0%{top:10%;} 100%{top:90%;} }
     .qr-corners::before,.qr-corners::after { content:''; position:absolute; width:24px; height:24px; border-color:white; border-style:solid; }
@@ -166,14 +165,14 @@
     .qr-corners::after  { bottom:8px; right:8px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
     .qr-hint   { color:rgba(255,255,255,0.7); font-size:14px; margin-top:16px; text-align:center; padding:0 20px; }
     .qr-cancel { margin-top:24px; padding:14px 40px; background:white; color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; }
+    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; }
     /* Count tabs */
     .count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .count-tab  { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
-    .count-tab.active       { background:var(--blue); color:white; }
+    .count-tab.active { background:var(--blue); color:white; }
     .count-tab.green-tab.active { background:var(--green); color:white; }
     .count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
-    /* Inventory count card */
+    /* Inventory count */
     .inv-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .inv-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
     .inv-admin    { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
@@ -183,7 +182,7 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- QR SCANNER -->
+<!-- QR SCANNER OVERLAY -->
 <div class="qr-overlay" id="qr-overlay">
   <div class="qr-header" id="qr-header">📷 Scan QR Code</div>
   <div class="qr-video-wrap">
@@ -191,8 +190,8 @@
     <div class="qr-frame"><div class="qr-line"></div><div class="qr-corners"></div></div>
   </div>
   <div class="qr-hint">Point camera at the QR code on the box</div>
-  <div class="qr-status" id="qr-status">Initializing camera...</div>
-  <button class="qr-cancel" onclick="stopQRScan()">Cancel</button>
+  <div class="qr-status" id="qr-status"></div>
+  <button class="qr-cancel" onclick="stopQRScan()">✕ Cancel</button>
 </div>
 
 <!-- OVERRIDE MODAL -->
@@ -234,10 +233,7 @@
 
 <!-- STOCK -->
 <div class="screen" id="screen-stock">
-  <div class="search-wrap">
-    <span>🔍</span>
-    <input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()">
-  </div>
+  <div class="search-wrap"><span>🔍</span><input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()"></div>
   <div class="filter-row">
     <button class="ftab active" onclick="setStockFilter('all',this)">All</button>
     <button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low</button>
@@ -259,14 +255,11 @@
       <div class="sdrop" id="log-drop" style="display:none;"></div>
     </div>
     <div class="sel-part" id="log-sel" style="display:none;">
-      <div class="sel-id"   id="log-sel-id"></div>
+      <div class="sel-id" id="log-sel-id"></div>
       <div class="sel-name" id="log-sel-name"></div>
       <div class="sel-info" id="log-sel-info"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Date</label>
-      <input type="date" class="form-input" id="log-date">
-    </div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="log-date"></div>
     <div class="form-group">
       <label class="form-label">Movement Type</label>
       <select class="form-select" id="log-type" onchange="onLogTypeChange()">
@@ -277,28 +270,16 @@
         <option value="Received from other city">📦 Received from other city</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Quantity</label>
-      <input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1">
-    </div>
-    <div class="form-group" id="log-city-group" style="display:none;">
-      <label class="form-label">City</label>
-      <input type="text" class="form-input" id="log-city" placeholder="City name...">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notes (optional)</label>
-      <input type="text" class="form-input" id="log-notes" placeholder="Any notes...">
-    </div>
+    <div class="form-group"><label class="form-label">Quantity</label><input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1"></div>
+    <div class="form-group" id="log-city-group" style="display:none;"><label class="form-label">City</label><input type="text" class="form-input" id="log-city" placeholder="City name..."></div>
+    <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="log-notes" placeholder="Any notes..."></div>
     <button class="submit-btn" id="log-submit" onclick="submitLog()">Submit Movement</button>
   </div>
 </div>
 
 <!-- HISTORY -->
 <div class="screen" id="screen-history">
-  <div class="search-wrap">
-    <span>🔍</span>
-    <input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()">
-  </div>
+  <div class="search-wrap"><span>🔍</span><input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()"></div>
   <div id="hist-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
@@ -321,33 +302,26 @@
       <div class="sdrop" id="storage-drop" style="display:none;"></div>
     </div>
     <div class="sel-part" id="storage-sel" style="display:none;">
-      <div class="sel-id"   id="storage-sel-id"></div>
+      <div class="sel-id" id="storage-sel-id"></div>
       <div class="sel-name" id="storage-sel-name"></div>
       <div class="sel-info" id="storage-sel-info"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">📦 Storage Area Qty</label>
-      <input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0">
-    </div>
+    <div class="form-group"><label class="form-label">📦 Storage Area Qty</label><input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0"></div>
     <button class="submit-btn green-btn" id="storage-submit" onclick="submitStorageQty()">✅ Save Storage Qty</button>
   </div>
   <div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
 </div>
 
-<!-- INVENTORY COUNT COMPARISON — Manager only -->
+<!-- INVENTORY COUNT — Manager only -->
 <div class="screen" id="screen-inventory">
   <div class="cards-grid" id="inv-cards"></div>
-  <div class="search-wrap">
-    <span>🔍</span>
-    <input type="text" id="inv-search" placeholder="Search parts..." oninput="filterInventory()">
-  </div>
+  <div class="search-wrap"><span>🔍</span><input type="text" id="inv-search" placeholder="Search parts..." oninput="filterInventory()"></div>
   <div class="filter-row">
     <button class="ftab active" onclick="setInvFilter('all',this)">All</button>
     <button class="ftab" onclick="setInvFilter('missing',this)">🔴 Missing</button>
     <button class="ftab" onclick="setInvFilter('extra',this)">🟢 Extra</button>
     <button class="ftab" onclick="setInvFilter('match',this)">⚪ Match</button>
   </div>
-  <!-- Legend -->
   <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
     <span style="font-size:11px;color:#1b5e20;background:#e8f5e9;padding:3px 10px;border-radius:12px;font-weight:600;">📦 Physical</span>
     <span style="font-size:11px;color:#1565c0;background:#e3f2fd;padding:3px 10px;border-radius:12px;font-weight:600;">💻 Admin</span>
@@ -376,17 +350,17 @@ var S = {
 };
 
 // ═══════════════════════════════════════════════════════════
-// LOCAL STORAGE SESSION
+// LOCAL STORAGE SESSION — persists across refresh same day
 // ═══════════════════════════════════════════════════════════
 function saveSession(user) {
-  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:new Date().toDateString()})); } catch(e) {}
+  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:new Date().toDateString()})); } catch(e) { console.log('saveSession error:',e); }
 }
 function loadSession() {
   try {
-    var raw=localStorage.getItem('sparePartsSession');
+    var raw = localStorage.getItem('sparePartsSession');
     if (!raw) return null;
-    var data=JSON.parse(raw);
-    if (data.date!==new Date().toDateString()) { localStorage.removeItem('sparePartsSession'); return null; }
+    var data = JSON.parse(raw);
+    if (data.date !== new Date().toDateString()) { localStorage.removeItem('sparePartsSession'); return null; }
     return data.user;
   } catch(e) { return null; }
 }
@@ -396,59 +370,167 @@ function clearSession() { try { localStorage.removeItem('sparePartsSession'); } 
 // API
 // ═══════════════════════════════════════════════════════════
 function api(params) {
-  var url=API_URL+'?'+Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  var url = API_URL+'?'+Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
   return fetch(url).then(function(r){ return r.json(); }).catch(function(e){ return {success:false,error:e.message}; });
 }
 
 // ═══════════════════════════════════════════════════════════
-// QR SCANNER
+// QR SCANNER — Native camera API + ZXing fallback
 // ═══════════════════════════════════════════════════════════
 function startQRScan(mode) {
-  S.qrMode=mode;
-  document.getElementById('qr-header').textContent=mode==='count'?'📷 Scan Part QR Code':mode==='storage'?'📷 Scan Storage QR Code':'📷 Scan Part QR Code';
-  document.getElementById('qr-status').textContent='Initializing camera...';
+  S.qrMode = mode;
+  document.getElementById('qr-header').textContent =
+    mode==='count' ? '📷 Scan Part QR Code' :
+    mode==='storage' ? '📷 Scan Storage QR Code' : '📷 Scan Part QR Code';
+  document.getElementById('qr-status').textContent = 'Starting camera...';
   document.getElementById('qr-overlay').classList.add('show');
-  S.qrActive=true;
-  if (typeof ZXing==='undefined') { document.getElementById('qr-status').textContent='Scanner loading...'; setTimeout(function(){ if(S.qrActive) initZXing(); },1000); return; }
-  initZXing();
+  S.qrActive = true;
+  startCamera();
 }
 
-function initZXing() {
+function startCamera() {
+  // Request camera permission and start stream
+  navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: 'environment' },
+      width:  { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  })
+  .then(function(stream) {
+    var video = document.getElementById('qr-video');
+    video.srcObject = stream;
+    video.setAttribute('playsinline', true);
+    video.play();
+    document.getElementById('qr-status').textContent = '🔍 Scanning... hold steady';
+    // Try ZXing once video is playing
+    video.addEventListener('loadedmetadata', function() {
+      tryZXing(video);
+    }, { once: true });
+  })
+  .catch(function(err) {
+    console.log('Camera error:', err);
+    document.getElementById('qr-status').textContent = '❌ Camera error: ' + err.message + '. Please allow camera access.';
+  });
+}
+
+function tryZXing(video) {
+  // Dynamically load ZXing if not available
+  if (typeof ZXing === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js';
+    script.onload = function() { initZXingWithVideo(video); };
+    script.onerror = function() {
+      // Try alternative CDN
+      var script2 = document.createElement('script');
+      script2.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
+      script2.onload = function() { initZXingWithVideo(video); };
+      script2.onerror = function() {
+        document.getElementById('qr-status').textContent = '⚠️ Scanner not loaded. Enter code manually below.';
+        showManualInput();
+      };
+      document.head.appendChild(script2);
+    };
+    document.head.appendChild(script);
+  } else {
+    initZXingWithVideo(video);
+  }
+}
+
+function initZXingWithVideo(video) {
+  if (!S.qrActive) return;
   try {
-    var hints=new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39,ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.DATA_MATRIX]);
-    S.qrReader=new ZXing.BrowserMultiFormatReader(hints);
-    document.getElementById('qr-status').textContent='Camera starting...';
-    S.qrReader.decodeFromConstraints({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},'qr-video',function(result,err){
+    var hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.QR_CODE,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.DATA_MATRIX
+    ]);
+    S.qrReader = new ZXing.BrowserMultiFormatReader(hints);
+    document.getElementById('qr-status').textContent = '🔍 Scanning... hold steady';
+    // Decode from existing video stream
+    S.qrReader.decodeFromVideoElement(video, function(result, err) {
       if (!S.qrActive) return;
-      if (result) { var code=result.getText().trim(); stopQRScan(); handleQRResult(code); }
-      else if (err&&!(err instanceof ZXing.NotFoundException)) { console.log('QR error:',err); }
-      else { document.getElementById('qr-status').textContent='🔍 Scanning... hold steady'; }
+      if (result) {
+        var code = result.getText().trim();
+        document.getElementById('qr-status').textContent = '✅ Scanned: ' + code;
+        stopQRScan();
+        handleQRResult(code);
+      } else if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.log('Scan error:', err);
+      }
     });
-  } catch(e) { document.getElementById('qr-status').textContent='❌ Camera error: '+e.message; }
+  } catch(e) {
+    console.log('ZXing error:', e);
+    document.getElementById('qr-status').textContent = '⚠️ Auto-scan failed. Enter code manually below.';
+    showManualInput();
+  }
+}
+
+function showManualInput() {
+  // Show manual input as fallback
+  var status = document.getElementById('qr-status');
+  status.innerHTML = '⚠️ Auto-scan unavailable.<br>'+
+    '<input type="text" id="manual-qr-input" placeholder="Type item code here..." '+
+    'style="margin-top:10px;padding:10px;border-radius:8px;border:none;font-size:16px;width:260px;text-align:center;" autocomplete="off">'+
+    '<button onclick="submitManualCode()" '+
+    'style="display:block;margin:8px auto 0;padding:10px 30px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Submit</button>';
+}
+
+function submitManualCode() {
+  var input = document.getElementById('manual-qr-input');
+  if (!input) return;
+  var code = input.value.trim();
+  if (!code) return;
+  stopQRScan();
+  handleQRResult(code);
 }
 
 function stopQRScan() {
-  S.qrActive=false;
-  if (S.qrReader) { try { S.qrReader.reset(); } catch(e) {} S.qrReader=null; }
+  S.qrActive = false;
+  // Stop ZXing reader
+  if (S.qrReader) {
+    try { S.qrReader.reset(); } catch(e) {}
+    S.qrReader = null;
+  }
+  // Stop camera stream
+  var video = document.getElementById('qr-video');
+  if (video) {
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(function(t){ t.stop(); });
+      video.srcObject = null;
+    }
+    video.src = '';
+  }
   document.getElementById('qr-overlay').classList.remove('show');
-  var video=document.getElementById('qr-video');
-  if (video&&video.srcObject) { video.srcObject.getTracks().forEach(function(t){ t.stop(); }); video.srcObject=null; }
+  document.getElementById('qr-status').textContent = '';
 }
 
 function handleQRResult(code) {
-  if (S.qrMode==='count') {
-    var part=S.countParts.find(function(p){ return p.id===code; });
-    if (part) { selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount); showToast('✅ Found: '+part.name,'success'); setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },300); }
-    else { showToast('❌ Not found: '+code,'error'); }
-  } else if (S.qrMode==='storage') {
-    var part=S.parts.find(function(p){ return p.id===code; });
-    if (part) { selectStoragePart(part.id,part.name,part.storageRemaining||0); showToast('✅ Found: '+part.name,'success'); setTimeout(function(){ var q=document.getElementById('storage-qty'); if(q) q.focus(); },300); }
-    else { showToast('❌ Not found: '+code,'error'); }
-  } else if (S.qrMode==='log') {
-    var part=S.parts.find(function(p){ return p.id===code; });
-    if (part) { selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0); showToast('✅ Found: '+part.name,'success'); }
-    else { showToast('❌ Not found: '+code,'error'); }
+  var mode = S.qrMode;
+  if (mode === 'count') {
+    var part = S.countParts.find(function(p){ return p.id===code; });
+    if (part) {
+      selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);
+      showToast('✅ Found: '+part.name,'success');
+      setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },300);
+    } else { showToast('❌ Not found: '+code,'error'); }
+  } else if (mode === 'storage') {
+    var part = S.parts.find(function(p){ return p.id===code; });
+    if (part) {
+      selectStoragePart(part.id,part.name,part.storageRemaining||0);
+      showToast('✅ Found: '+part.name,'success');
+      setTimeout(function(){ var q=document.getElementById('storage-qty'); if(q) q.focus(); },300);
+    } else { showToast('❌ Not found: '+code,'error'); }
+  } else if (mode === 'log') {
+    var part = S.parts.find(function(p){ return p.id===code; });
+    if (part) {
+      selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0);
+      showToast('✅ Found: '+part.name,'success');
+    } else { showToast('❌ Not found: '+code,'error'); }
   }
 }
 
@@ -456,9 +538,9 @@ function handleQRResult(code) {
 // LOGIN
 // ═══════════════════════════════════════════════════════════
 function doLogin() {
-  var pin=document.getElementById('pin-input').value.trim();
+  var pin = document.getElementById('pin-input').value.trim();
   if (!pin) { showPinError('Please enter your PIN'); return; }
-  var btn=document.getElementById('login-btn');
+  var btn = document.getElementById('login-btn');
   btn.disabled=true; btn.textContent='Checking...';
   document.getElementById('pin-error').textContent='';
   api({action:'verifyPin',pin:pin}).then(function(r){
@@ -469,7 +551,7 @@ function doLogin() {
 }
 
 function startApp(user) {
-  S.user=user;
+  S.user = user;
   buildNav();
   loadDashboardData(function(){
     document.getElementById('screen-login').style.display='none';
@@ -482,7 +564,8 @@ function startApp(user) {
 function showPinError(msg) { document.getElementById('pin-error').textContent=msg; }
 
 function logout() {
-  clearSession(); S.user=null; S.parts=[]; S.movements=[];
+  clearSession();
+  S.user=null; S.parts=[]; S.movements=[];
   stopQRScan();
   if (S.autoRefreshTimer) clearInterval(S.autoRefreshTimer);
   document.getElementById('pin-input').value='';
@@ -498,7 +581,7 @@ function logout() {
 // ═══════════════════════════════════════════════════════════
 function startAutoRefresh() {
   if (S.autoRefreshTimer) clearInterval(S.autoRefreshTimer);
-  S.autoRefreshTimer=setInterval(function(){
+  S.autoRefreshTimer = setInterval(function(){
     if (!S.user) return;
     api({action:'getDashboard',pin:S.user.pin}).then(function(d){
       if (!d.success) return;
@@ -535,7 +618,7 @@ function buildNav() {
   if (r==='Manager'||p.history)        html+=navBtn('history',  '📋','History',  false);
   if (r==='Manager'||p.alerts)         html+=navBtn('alerts',   '🔔','Alerts',   false);
   if (r==='Manager'||p.storageOpening) html+=navBtn('storage',  '📥','Storage',  false);
-  if (r==='Manager')                   html+=navBtn('inventory','📊','Inv Count', false);
+  if (r==='Manager')                   html+=navBtn('inventory','📊','Inv Count',false);
   nav.innerHTML=html;
 }
 
@@ -618,7 +701,6 @@ function managerStartCount(){
     else { showToast('❌ '+r.error,'error'); }
   });
 }
-
 function managerLockCount(){
   if (!confirm('Lock the count session?')) return;
   api({action:'lockCount',pin:S.user.pin}).then(function(r){
@@ -626,7 +708,6 @@ function managerLockCount(){
     else { showToast('❌ '+r.error,'error'); }
   });
 }
-
 function managerUnlockCount(){
   api({action:'unlockCount',pin:S.user.pin}).then(function(r){
     if (r.success){ S.session={status:'active'}; showToast('🔓 Count unlocked!','success'); renderHome(); }
@@ -635,14 +716,14 @@ function managerUnlockCount(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// INVENTORY COUNT SCREEN — Manager only
+// INVENTORY COUNT — Manager only
 // ═══════════════════════════════════════════════════════════
 function loadInventoryScreen(){
   document.getElementById('inv-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
   document.getElementById('inv-cards').innerHTML='';
   api({action:'getInventoryCount',pin:S.user.pin}).then(function(r){
     if (!r.success){ showToast('❌ '+r.error,'error'); return; }
-    S.invData = r.data || [];
+    S.invData=r.data||[];
     renderInventoryCards();
     filterInventory();
   });
@@ -653,15 +734,12 @@ function renderInventoryCards(){
   var extra  =S.invData.filter(function(r){ return r.diff>0; }).length;
   var match  =S.invData.filter(function(r){ return r.diff===0; }).length;
   document.getElementById('inv-cards').innerHTML=
-    statCard('Total',S.invData.length,'blue')+
-    statCard('Missing 🔴',missing,'red')+
-    statCard('Extra 🟢',extra,'green')+
-    statCard('Match ⚪',match,'orange');
+    statCard('Total',S.invData.length,'blue')+statCard('Missing 🔴',missing,'red')+
+    statCard('Extra 🟢',extra,'green')+statCard('Match ⚪',match,'orange');
 }
 
 function filterInventory(){
-  var q=(document.getElementById('inv-search').value||'').toLowerCase();
-  var filter=S.invFilter;
+  var q=(document.getElementById('inv-search').value||'').toLowerCase(), filter=S.invFilter;
   var list=S.invData.filter(function(r){
     var matchQ=!q||r.name.toLowerCase().indexOf(q)!==-1||r.id.toLowerCase().indexOf(q)!==-1;
     var matchF=filter==='all'||(filter==='missing'&&r.diff<0)||(filter==='extra'&&r.diff>0)||(filter==='match'&&r.diff===0);
@@ -671,20 +749,14 @@ function filterInventory(){
   if (list.length===0){ document.getElementById('inv-content').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>'; return; }
   document.getElementById('inv-content').innerHTML=list.map(function(r){
     var diffColor=r.diff<0?'#c62828':r.diff>0?'#1b5e20':'#666';
-    var diffBg   =r.diff<0?'#fce8e6':r.diff>0?'#e8f5e9':'#f5f5f5';
-    var diffText =r.diff>0?'+'+r.diff:r.diff;
+    var diffBg=r.diff<0?'#fce8e6':r.diff>0?'#e8f5e9':'#f5f5f5';
+    var diffText=r.diff>0?'+'+r.diff:r.diff;
     return '<div class="inv-card" style="border-left:4px solid '+(r.diff<0?'var(--red)':r.diff>0?'var(--green)':'var(--border)')+'">'+
-      '<div class="part-header" style="margin-bottom:10px;">'+
-        '<span class="part-id">'+r.id+'</span>'+
-        '<span class="part-sep"> — </span>'+
-        '<span class="part-name">'+r.name+'</span>'+
-      '</div>'+
+      '<div class="part-header" style="margin-bottom:10px;"><span class="part-id">'+r.id+'</span><span class="part-sep"> — </span><span class="part-name">'+r.name+'</span></div>'+
       '<div class="part-stocks">'+
         '<div class="stock-box"><div class="stock-lbl">📦 Physical</div><div class="inv-physical">'+r.physical+'</div></div>'+
         '<div class="stock-box"><div class="stock-lbl">💻 Admin</div><div class="inv-admin">'+r.admin+'</div></div>'+
-        '<div class="stock-box"><div class="stock-lbl">Difference</div>'+
-          '<div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div>'+
-        '</div>'+
+        '<div class="stock-box"><div class="stock-lbl">Difference</div><div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div></div>'+
       '</div></div>';
   }).join('');
 }
@@ -692,8 +764,7 @@ function filterInventory(){
 function setInvFilter(f,btn){
   S.invFilter=f;
   document.querySelectorAll('.ftab').forEach(function(t){ t.classList.remove('active'); });
-  btn.classList.add('active');
-  filterInventory();
+  btn.classList.add('active'); filterInventory();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -725,7 +796,7 @@ function renderCountScreen(progress){
     if (S.user.role!=='Manager') html+='<div class="empty"><div class="empty-icon">⏸️</div>No active count session.<br>Ask manager to start.</div>';
     document.getElementById('count-content').innerHTML=html; return;
   }
-  html+='<div class="form-card">'+
+  html+='<div class="form-card" id="count-form-card">'+
     '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>'+
     '<button class="qr-btn" onclick="startQRScan(\'count\')">📷 Scan QR Code</button>'+
     '<div class="form-group" style="position:relative;">'+
@@ -734,30 +805,21 @@ function renderCountScreen(progress){
       '<div class="sdrop" id="count-drop" style="display:none;"></div>'+
     '</div>'+
     '<div class="sel-part" id="count-sel" style="display:none;">'+
-      '<div class="sel-id" id="count-sel-id"></div>'+
-      '<div class="sel-name" id="count-sel-name"></div>'+
-      '<div class="sel-info" id="count-sel-info"></div>'+
+      '<div class="sel-id" id="count-sel-id"></div><div class="sel-name" id="count-sel-name"></div><div class="sel-info" id="count-sel-info"></div>'+
     '</div>'+
-    '<div class="form-group">'+
-      '<label class="form-label">Actual Count</label>'+
-      '<input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0">'+
-    '</div>'+
+    '<div class="form-group"><label class="form-label">Actual Count</label><input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0"></div>'+
     '<button class="submit-btn green-btn" id="count-submit" onclick="submitCountEntry()">✅ Save Count</button>'+
     '</div>';
-
   var entries=progress.success&&progress.entries?progress.entries:[];
   var pendingParts=S.countParts.filter(function(p){ return !p.counted; });
-
   html+='<div class="count-tabs">'+
     '<button class="count-tab '+(S.countTab==='pending'?'active':'')+'" onclick="switchCountTab(\'pending\')">⬜ Pending ('+pendingParts.length+')</button>'+
     '<button class="count-tab green-tab '+(S.countTab==='counted'?'active':'')+'" onclick="switchCountTab(\'counted\')">✅ Counted ('+entries.length+')</button>'+
     '</div>';
-
-  // Pending list
   html+='<div id="count-pending-list" style="display:'+(S.countTab==='pending'?'block':'none')+'">';
   if (pendingParts.length===0){ html+='<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>'; }
   else {
-    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="pending-search" placeholder="Search pending parts..." oninput="filterPendingList()"></div>';
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="pending-search" placeholder="Search pending..." oninput="filterPendingList()"></div>';
     html+='<div id="pending-list-items">';
     pendingParts.forEach(function(p){
       html+='<div class="count-card pending" style="border-left:4px solid #e0e0e0;">'+
@@ -769,12 +831,10 @@ function renderCountScreen(progress){
     html+='</div>';
   }
   html+='</div>';
-
-  // Counted list
   html+='<div id="count-counted-list" style="display:'+(S.countTab==='counted'?'block':'none')+'">';
   if (entries.length===0){ html+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.</div>'; }
   else {
-    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="counted-search" placeholder="Search counted parts..." oninput="filterCountedList()"></div>';
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="counted-search" placeholder="Search counted..." oninput="filterCountedList()"></div>';
     html+='<div id="counted-list-items">';
     entries.forEach(function(e){
       html+='<div class="count-card counted">'+
@@ -785,8 +845,7 @@ function renderCountScreen(progress){
             '<div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div>'+
             '<div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+
             (e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+
-          '</div>'+
-        '</div></div>';
+          '</div></div></div>';
     });
     html+='</div>';
   }
@@ -870,11 +929,7 @@ function submitCountEntry(){
 }
 
 function closeOverrideModal(){ document.getElementById('override-modal').classList.remove('show'); S.overridePending=null; }
-
-function confirmOverride(){
-  document.getElementById('override-modal').classList.remove('show');
-  if (S.overridePending){ saveCount(S.overridePending.itemCode,S.overridePending.qty); S.overridePending=null; }
-}
+function confirmOverride(){ document.getElementById('override-modal').classList.remove('show'); if(S.overridePending){ saveCount(S.overridePending.itemCode,S.overridePending.qty); S.overridePending=null; } }
 
 function saveCount(itemCode,qty){
   var savedCode=itemCode, savedQty=qty;
@@ -897,8 +952,7 @@ function saveCount(itemCode,qty){
 }
 
 function refreshCountLists(progress){
-  var countedParts=progress.entries||[];
-  var pendingParts=S.countParts.filter(function(p){ return !p.counted; });
+  var countedParts=progress.entries||[], pendingParts=S.countParts.filter(function(p){ return !p.counted; });
   var tabs=document.querySelectorAll('.count-tab');
   if (tabs[0]) tabs[0].textContent='⬜ Pending ('+pendingParts.length+')';
   if (tabs[1]) tabs[1].textContent='✅ Counted ('+countedParts.length+')';
@@ -926,8 +980,7 @@ function refreshCountLists(progress){
             '<div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div>'+
             '<div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+
             (e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+
-          '</div>'+
-        '</div></div>';
+          '</div></div></div>';
     });
     countedItems.innerHTML=html;
   }
@@ -995,7 +1048,7 @@ function submitStorageQty(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// STOCK SCREEN
+// STOCK
 // ═══════════════════════════════════════════════════════════
 function renderStock(){ filterStock(); }
 
@@ -1030,7 +1083,7 @@ function partCard(p){
 }
 
 // ═══════════════════════════════════════════════════════════
-// LOG SCREEN
+// LOG
 // ═══════════════════════════════════════════════════════════
 function initLog(){
   var today=new Date();
@@ -1146,23 +1199,20 @@ document.addEventListener('click',function(e){
 });
 
 // ═══════════════════════════════════════════════════════════
-// INIT
+// INIT — Check localStorage on load
 // ═══════════════════════════════════════════════════════════
-window.onload=function(){
-  var savedUser=loadSession();
-  if (savedUser){ startApp(savedUser); }
-};
-
-// ═══════════════════════════════════════════════════════════
-// PWA SERVICE WORKER
-// ═══════════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load',function(){
+window.onload = function() {
+  var savedUser = loadSession();
+  if (savedUser) {
+    startApp(savedUser);
+  }
+  // Register service worker
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/spare-parts-mobile/sw.js')
-      .then(function(reg){ console.log('SW registered'); })
+      .then(function(reg){ console.log('SW registered:', reg.scope); })
       .catch(function(err){ console.log('SW error:',err); });
-  });
-}
+  }
+};
 </script>
 </body>
 </html>
