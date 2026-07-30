@@ -1,16 +1,6 @@
-var CACHE_NAME = 'spare-parts-v2';
-var urlsToCache = [
-  '/spare-parts-mobile/',
-  '/spare-parts-mobile/index.html',
-  '/spare-parts-mobile/manifest.json'
-];
+var CACHE_NAME = 'spare-parts-v4';
 
 self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(urlsToCache);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -19,9 +9,8 @@ self.addEventListener('activate', function(event) {
     caches.keys().then(function(cacheNames) {
       return Promise.all(
         cacheNames.map(function(cacheName) {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
+          // Delete ALL old caches
+          return caches.delete(cacheName);
         })
       );
     })
@@ -30,9 +19,23 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
+  // Network first — always get latest version
+  // Only fall back to cache if offline
   event.respondWith(
-    fetch(event.request).catch(function() {
-      return caches.match(event.request);
-    })
+    fetch(event.request.clone())
+      .then(function(response) {
+        // Cache the fresh response
+        if (response && response.status === 200 && response.type === 'basic') {
+          var responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      })
+      .catch(function() {
+        // Offline — use cache
+        return caches.match(event.request);
+      })
   );
 });
