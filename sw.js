@@ -1,28 +1,38 @@
-var CACHE_NAME = 'spare-parts-v1';
+var CACHE_NAME = 'spare-parts-v2';
 var urlsToCache = [
   '/spare-parts-mobile/',
   '/spare-parts-mobile/index.html',
   '/spare-parts-mobile/manifest.json'
 ];
 
-// Install service worker
 self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(urlsToCache);
+    })
   );
+  self.skipWaiting();
 });
 
-// Fetch from cache first then network
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
 self.addEventListener('fetch', function(event) {
   event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        if (response) return response;
-        return fetch(event.request);
-      }
-    )
+    fetch(event.request).catch(function() {
+      return caches.match(event.request);
+    })
   );
 });
