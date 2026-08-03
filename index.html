@@ -18,7 +18,6 @@
       --bg:#f0f2f5; --white:#ffffff; --border:#e0e0e0; --text:#333333; --muted:#888888; --radius:14px;
     }
     body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; }
-    .header { background:var(--blue); color:white; padding:16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
     .logout-btn { background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 12px; border-radius:20px; font-size:13px; cursor:pointer; font-family:inherit; }
     .bottom-nav { position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); }
     .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 4px 8px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:10px; font-family:inherit; transition:color 0.15s; }
@@ -151,7 +150,6 @@
     .storage-info-sub   { font-size:12px; color:#555; }
     .live-badge { display:inline-block; background:#e8f5e9; color:var(--green); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; animation:pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-    /* QR Scanner */
     .qr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; }
     .qr-overlay.show { display:flex; }
     .qr-header { color:white; font-size:18px; font-weight:600; margin-bottom:20px; text-align:center; padding:0 20px; }
@@ -165,14 +163,12 @@
     .qr-corners::after  { bottom:8px; right:8px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
     .qr-hint   { color:rgba(255,255,255,0.7); font-size:14px; margin-top:16px; text-align:center; padding:0 20px; }
     .qr-cancel { margin-top:24px; padding:14px 40px; background:white; color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; }
-    /* Count tabs */
+    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; width:100%; }
     .count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .count-tab  { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
     .count-tab.active { background:var(--blue); color:white; }
     .count-tab.green-tab.active { background:var(--green); color:white; }
     .count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
-    /* Inventory count */
     .inv-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
     .inv-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
     .inv-admin    { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
@@ -182,7 +178,7 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- QR SCANNER OVERLAY -->
+<!-- QR SCANNER -->
 <div class="qr-overlay" id="qr-overlay">
   <div class="qr-header" id="qr-header">📷 Scan QR Code</div>
   <div class="qr-video-wrap">
@@ -307,7 +303,7 @@
       <div class="sel-info" id="storage-sel-info"></div>
     </div>
     <div class="form-group"><label class="form-label">📦 Storage Area Qty</label><input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0"></div>
-    <button class="submit-btn green-btn" id="storage-submit" onclick="submitStorageQty()">✅ Save Storage Qty</button>
+    <button class="submit-btn green-btn" onclick="submitStorageQty()">✅ Save Storage Qty</button>
   </div>
   <div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
 </div>
@@ -345,22 +341,23 @@ var S = {
   stockFilter:'all', logSelected:null, storageSelected:null,
   countSelected:null, overridePending:null,
   session:{status:'inactive'}, storageCount:0,
-  autoRefreshTimer:null, qrActive:false, qrMode:null, qrReader:null,
+  autoRefreshTimer:null,
+  qrActive:false, qrMode:null, qrReader:null, qrStream:null, qrScanLoop:null,
   countTab:'pending'
 };
 
 // ═══════════════════════════════════════════════════════════
-// LOCAL STORAGE SESSION — persists across refresh same day
+// LOCAL STORAGE SESSION
 // ═══════════════════════════════════════════════════════════
 function saveSession(user) {
-  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:new Date().toDateString()})); } catch(e) { console.log('saveSession error:',e); }
+  try { localStorage.setItem('sparePartsSession', JSON.stringify({user:user,date:new Date().toDateString()})); } catch(e) {}
 }
 function loadSession() {
   try {
-    var raw = localStorage.getItem('sparePartsSession');
+    var raw=localStorage.getItem('sparePartsSession');
     if (!raw) return null;
-    var data = JSON.parse(raw);
-    if (data.date !== new Date().toDateString()) { localStorage.removeItem('sparePartsSession'); return null; }
+    var data=JSON.parse(raw);
+    if (data.date!==new Date().toDateString()) { localStorage.removeItem('sparePartsSession'); return null; }
     return data.user;
   } catch(e) { return null; }
 }
@@ -370,188 +367,168 @@ function clearSession() { try { localStorage.removeItem('sparePartsSession'); } 
 // API
 // ═══════════════════════════════════════════════════════════
 function api(params) {
-  var url = API_URL+'?'+Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  var url=API_URL+'?'+Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
   return fetch(url).then(function(r){ return r.json(); }).catch(function(e){ return {success:false,error:e.message}; });
 }
 
 // ═══════════════════════════════════════════════════════════
-// QR SCANNER — Native camera API + ZXing fallback
+// QR SCANNER — Canvas scan loop, most reliable on mobile
 // ═══════════════════════════════════════════════════════════
 function startQRScan(mode) {
-  S.qrMode = mode;
-  document.getElementById('qr-header').textContent =
-    mode==='count' ? '📷 Scan Part QR Code' :
-    mode==='storage' ? '📷 Scan Storage QR Code' : '📷 Scan Part QR Code';
-  document.getElementById('qr-status').textContent = 'Starting camera...';
+  S.qrMode=mode;
+  document.getElementById('qr-header').textContent=
+    mode==='count'?'📷 Scan Part QR Code':
+    mode==='storage'?'📷 Scan Storage QR Code':'📷 Scan Part QR Code';
+  document.getElementById('qr-status').textContent='Starting camera...';
   document.getElementById('qr-overlay').classList.add('show');
-  S.qrActive = true;
-  startCamera();
-}
+  S.qrActive=true;
+  S.qrScanLoop=null;
 
-function startCamera() {
-  // Request camera permission and start stream
   navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: { ideal: 'environment' },
-      width:  { ideal: 1280 },
-      height: { ideal: 720 }
-    }
+    video:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} }
   })
-  .then(function(stream) {
-    var video = document.getElementById('qr-video');
-    video.srcObject = stream;
-    video.setAttribute('playsinline', true);
+  .then(function(stream){
+    S.qrStream=stream;
+    var video=document.getElementById('qr-video');
+    video.srcObject=stream;
+    video.setAttribute('playsinline','true');
     video.play();
-    document.getElementById('qr-status').textContent = '🔍 Scanning... hold steady';
-    // Try ZXing once video is playing
-    video.addEventListener('loadedmetadata', function() {
-      tryZXing(video);
-    }, { once: true });
+    video.onloadedmetadata=function(){
+      document.getElementById('qr-status').textContent='🔍 Scanning... hold steady';
+      loadZXingAndScan(video);
+    };
   })
-  .catch(function(err) {
-    console.log('Camera error:', err);
-    document.getElementById('qr-status').textContent = '❌ Camera error: ' + err.message + '. Please allow camera access.';
+  .catch(function(err){
+    document.getElementById('qr-status').textContent='❌ Camera blocked. Please allow camera access.';
+    console.log('Camera error:',err);
   });
 }
 
-function tryZXing(video) {
-  // Dynamically load ZXing if not available
-  if (typeof ZXing === 'undefined') {
-    var script = document.createElement('script');
-    script.src = 'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js';
-    script.onload = function() { initZXingWithVideo(video); };
-    script.onerror = function() {
-      // Try alternative CDN
-      var script2 = document.createElement('script');
-      script2.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
-      script2.onload = function() { initZXingWithVideo(video); };
-      script2.onerror = function() {
-        document.getElementById('qr-status').textContent = '⚠️ Scanner not loaded. Enter code manually below.';
-        showManualInput();
-      };
-      document.head.appendChild(script2);
-    };
+function loadZXingAndScan(video) {
+  if (typeof ZXing!=='undefined') { startScanLoop(video); return; }
+  var cdns=[
+    'https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js',
+    'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js'
+  ];
+  var tried=0;
+  function tryNext(){
+    if (tried>=cdns.length){ document.getElementById('qr-status').textContent='⚠️ Scanner unavailable. Enter code manually:'; showManualInput(); return; }
+    var script=document.createElement('script');
+    script.src=cdns[tried++];
+    script.onload=function(){ if(!S.qrActive) return; document.getElementById('qr-status').textContent='🔍 Scanning... hold steady'; startScanLoop(video); };
+    script.onerror=function(){ tryNext(); };
     document.head.appendChild(script);
-  } else {
-    initZXingWithVideo(video);
   }
+  tryNext();
 }
 
-function initZXingWithVideo(video) {
+function startScanLoop(video) {
   if (!S.qrActive) return;
+  var canvas=document.createElement('canvas');
+  var ctx=canvas.getContext('2d');
   try {
-    var hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.QR_CODE,
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.DATA_MATRIX
+    var hints=new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+      ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,  ZXing.BarcodeFormat.DATA_MATRIX
     ]);
-    S.qrReader = new ZXing.BrowserMultiFormatReader(hints);
-    document.getElementById('qr-status').textContent = '🔍 Scanning... hold steady';
-    // Decode from existing video stream
-    S.qrReader.decodeFromVideoElement(video, function(result, err) {
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    var reader=new ZXing.BrowserMultiFormatReader(hints);
+    S.qrReader=reader;
+
+    function scanFrame(){
       if (!S.qrActive) return;
-      if (result) {
-        var code = result.getText().trim();
-        document.getElementById('qr-status').textContent = '✅ Scanned: ' + code;
-        stopQRScan();
-        handleQRResult(code);
-      } else if (err && !(err instanceof ZXing.NotFoundException)) {
-        console.log('Scan error:', err);
-      }
-    });
-  } catch(e) {
-    console.log('ZXing error:', e);
-    document.getElementById('qr-status').textContent = '⚠️ Auto-scan failed. Enter code manually below.';
+      if (video.readyState!==video.HAVE_ENOUGH_DATA){ S.qrScanLoop=setTimeout(scanFrame,300); return; }
+      canvas.width=video.videoWidth||640;
+      canvas.height=video.videoHeight||480;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      try {
+        var luminanceSource=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+        var binaryBitmap=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+        var result=reader.decodeBitmap(binaryBitmap);
+        if (result){
+          var code=result.getText().trim();
+          document.getElementById('qr-status').textContent='✅ Scanned: '+code;
+          stopQRScan();
+          handleQRResult(code);
+          return;
+        }
+      } catch(e){ /* NotFoundException is normal — no QR in frame */ }
+      S.qrScanLoop=setTimeout(scanFrame,300);
+    }
+    scanFrame();
+  } catch(e){
+    console.log('ZXing error:',e);
+    document.getElementById('qr-status').textContent='⚠️ Scanner error. Enter code manually:';
     showManualInput();
   }
 }
 
-function showManualInput() {
-  // Show manual input as fallback
-  var status = document.getElementById('qr-status');
-  status.innerHTML = '⚠️ Auto-scan unavailable.<br>'+
-    '<input type="text" id="manual-qr-input" placeholder="Type item code here..." '+
-    'style="margin-top:10px;padding:10px;border-radius:8px;border:none;font-size:16px;width:260px;text-align:center;" autocomplete="off">'+
-    '<button onclick="submitManualCode()" '+
-    'style="display:block;margin:8px auto 0;padding:10px 30px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Submit</button>';
+function stopQRScan(){
+  S.qrActive=false;
+  if (S.qrScanLoop){ clearTimeout(S.qrScanLoop); S.qrScanLoop=null; }
+  if (S.qrReader){ try{ S.qrReader.reset(); }catch(e){} S.qrReader=null; }
+  if (S.qrStream){ S.qrStream.getTracks().forEach(function(t){ t.stop(); }); S.qrStream=null; }
+  var video=document.getElementById('qr-video');
+  if (video){ video.srcObject=null; video.src=''; }
+  document.getElementById('qr-overlay').classList.remove('show');
+  document.getElementById('qr-status').textContent='';
 }
 
-function submitManualCode() {
-  var input = document.getElementById('manual-qr-input');
+function showManualInput(){
+  document.getElementById('qr-status').innerHTML=
+    '<input type="text" id="manual-qr-input" placeholder="Type item code here..." '+
+    'style="margin-top:8px;padding:10px;border-radius:8px;border:none;font-size:16px;width:260px;text-align:center;" autocomplete="off">'+
+    '<button onclick="submitManualCode()" '+
+    'style="display:block;margin:8px auto 0;padding:10px 30px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Submit</button>';
+  setTimeout(function(){ var i=document.getElementById('manual-qr-input'); if(i) i.focus(); },300);
+}
+
+function submitManualCode(){
+  var input=document.getElementById('manual-qr-input');
   if (!input) return;
-  var code = input.value.trim();
+  var code=input.value.trim();
   if (!code) return;
   stopQRScan();
   handleQRResult(code);
 }
 
-function stopQRScan() {
-  S.qrActive = false;
-  // Stop ZXing reader
-  if (S.qrReader) {
-    try { S.qrReader.reset(); } catch(e) {}
-    S.qrReader = null;
-  }
-  // Stop camera stream
-  var video = document.getElementById('qr-video');
-  if (video) {
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach(function(t){ t.stop(); });
-      video.srcObject = null;
-    }
-    video.src = '';
-  }
-  document.getElementById('qr-overlay').classList.remove('show');
-  document.getElementById('qr-status').textContent = '';
-}
-
-function handleQRResult(code) {
-  var mode = S.qrMode;
-  if (mode === 'count') {
-    var part = S.countParts.find(function(p){ return p.id===code; });
-    if (part) {
-      selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);
-      showToast('✅ Found: '+part.name,'success');
-      setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },300);
-    } else { showToast('❌ Not found: '+code,'error'); }
-  } else if (mode === 'storage') {
-    var part = S.parts.find(function(p){ return p.id===code; });
-    if (part) {
-      selectStoragePart(part.id,part.name,part.storageRemaining||0);
-      showToast('✅ Found: '+part.name,'success');
-      setTimeout(function(){ var q=document.getElementById('storage-qty'); if(q) q.focus(); },300);
-    } else { showToast('❌ Not found: '+code,'error'); }
-  } else if (mode === 'log') {
-    var part = S.parts.find(function(p){ return p.id===code; });
-    if (part) {
-      selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0);
-      showToast('✅ Found: '+part.name,'success');
-    } else { showToast('❌ Not found: '+code,'error'); }
+function handleQRResult(code){
+  if (S.qrMode==='count'){
+    var part=S.countParts.find(function(p){ return p.id===code; });
+    if (part){ selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount); showToast('✅ Found: '+part.name,'success'); setTimeout(function(){ var q=document.getElementById('count-qty'); if(q) q.focus(); },300); }
+    else { showToast('❌ Not found: '+code,'error'); }
+  } else if (S.qrMode==='storage'){
+    var part=S.parts.find(function(p){ return p.id===code; });
+    if (part){ selectStoragePart(part.id,part.name,part.storageRemaining||0); showToast('✅ Found: '+part.name,'success'); setTimeout(function(){ var q=document.getElementById('storage-qty'); if(q) q.focus(); },300); }
+    else { showToast('❌ Not found: '+code,'error'); }
+  } else if (S.qrMode==='log'){
+    var part=S.parts.find(function(p){ return p.id===code; });
+    if (part){ selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0); showToast('✅ Found: '+part.name,'success'); }
+    else { showToast('❌ Not found: '+code,'error'); }
   }
 }
 
 // ═══════════════════════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════════════════════
-function doLogin() {
-  var pin = document.getElementById('pin-input').value.trim();
-  if (!pin) { showPinError('Please enter your PIN'); return; }
-  var btn = document.getElementById('login-btn');
+function doLogin(){
+  var pin=document.getElementById('pin-input').value.trim();
+  if (!pin){ showPinError('Please enter your PIN'); return; }
+  var btn=document.getElementById('login-btn');
   btn.disabled=true; btn.textContent='Checking...';
   document.getElementById('pin-error').textContent='';
   api({action:'verifyPin',pin:pin}).then(function(r){
-    if (r.success) { r.pin=pin; saveSession(r); startApp(r); }
+    if (r.success){ r.pin=pin; saveSession(r); startApp(r); }
     else { showPinError('Invalid PIN. Please try again.'); document.getElementById('pin-input').value=''; }
     btn.disabled=false; btn.textContent='Login';
   });
 }
 
-function startApp(user) {
-  S.user = user;
+function startApp(user){
+  S.user=user;
   buildNav();
   loadDashboardData(function(){
     document.getElementById('screen-login').style.display='none';
@@ -561,11 +538,10 @@ function startApp(user) {
   });
 }
 
-function showPinError(msg) { document.getElementById('pin-error').textContent=msg; }
+function showPinError(msg){ document.getElementById('pin-error').textContent=msg; }
 
-function logout() {
-  clearSession();
-  S.user=null; S.parts=[]; S.movements=[];
+function logout(){
+  clearSession(); S.user=null; S.parts=[]; S.movements=[];
   stopQRScan();
   if (S.autoRefreshTimer) clearInterval(S.autoRefreshTimer);
   document.getElementById('pin-input').value='';
@@ -579,9 +555,9 @@ function logout() {
 // ═══════════════════════════════════════════════════════════
 // AUTO REFRESH
 // ═══════════════════════════════════════════════════════════
-function startAutoRefresh() {
+function startAutoRefresh(){
   if (S.autoRefreshTimer) clearInterval(S.autoRefreshTimer);
-  S.autoRefreshTimer = setInterval(function(){
+  S.autoRefreshTimer=setInterval(function(){
     if (!S.user) return;
     api({action:'getDashboard',pin:S.user.pin}).then(function(d){
       if (!d.success) return;
@@ -593,12 +569,12 @@ function startAutoRefresh() {
       if (name==='stock')   filterStock();
       if (name==='alerts')  renderAlerts();
       if (name==='history') renderHistory();
-      if (name==='count') { api({action:'getProgress'}).then(function(p){ if(p.success) updateProgressSilently(p); }); }
+      if (name==='count'){ api({action:'getProgress'}).then(function(p){ if(p.success) updateProgressSilently(p); }); }
     });
   },30000);
 }
 
-function updateProgressSilently(progress) {
+function updateProgressSilently(progress){
   var pct=progress.percentage||0;
   var bar=document.getElementById('prog-fill'), pctEl=document.getElementById('prog-pct'), txt=document.getElementById('prog-text');
   if (bar)   bar.style.width=pct+'%';
@@ -609,7 +585,7 @@ function updateProgressSilently(progress) {
 // ═══════════════════════════════════════════════════════════
 // BUILD NAV
 // ═══════════════════════════════════════════════════════════
-function buildNav() {
+function buildNav(){
   var nav=document.getElementById('bottom-nav'), p=S.user.permissions, r=S.user.role;
   var html=navBtn('home','🏠','Home',true);
   if (r==='Manager'||p.count)          html+=navBtn('count',    '🔢','Count',    false);
@@ -716,7 +692,7 @@ function managerUnlockCount(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// INVENTORY COUNT — Manager only
+// INVENTORY COUNT
 // ═══════════════════════════════════════════════════════════
 function loadInventoryScreen(){
   document.getElementById('inv-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
@@ -808,7 +784,7 @@ function renderCountScreen(progress){
       '<div class="sel-id" id="count-sel-id"></div><div class="sel-name" id="count-sel-name"></div><div class="sel-info" id="count-sel-info"></div>'+
     '</div>'+
     '<div class="form-group"><label class="form-label">Actual Count</label><input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0"></div>'+
-    '<button class="submit-btn green-btn" id="count-submit" onclick="submitCountEntry()">✅ Save Count</button>'+
+    '<button class="submit-btn green-btn" onclick="submitCountEntry()">✅ Save Count</button>'+
     '</div>';
   var entries=progress.success&&progress.entries?progress.entries:[];
   var pendingParts=S.countParts.filter(function(p){ return !p.counted; });
@@ -1199,17 +1175,14 @@ document.addEventListener('click',function(e){
 });
 
 // ═══════════════════════════════════════════════════════════
-// INIT — Check localStorage on load
+// INIT
 // ═══════════════════════════════════════════════════════════
-window.onload = function() {
-  var savedUser = loadSession();
-  if (savedUser) {
-    startApp(savedUser);
-  }
-  // Register service worker
-  if ('serviceWorker' in navigator) {
+window.onload=function(){
+  var savedUser=loadSession();
+  if (savedUser){ startApp(savedUser); }
+  if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('/spare-parts-mobile/sw.js')
-      .then(function(reg){ console.log('SW registered:', reg.scope); })
+      .then(function(reg){ console.log('SW registered'); })
       .catch(function(err){ console.log('SW error:',err); });
   }
 };
