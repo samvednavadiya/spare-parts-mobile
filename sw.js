@@ -1,4 +1,4 @@
-var CACHE_NAME = 'spare-parts-v5';
+var CACHE_NAME = 'spare-parts-v6';
 
 self.addEventListener('install', function(event) {
   self.skipWaiting();
