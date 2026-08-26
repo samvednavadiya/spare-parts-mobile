@@ -842,27 +842,26 @@ function renderAdjustment(){
 function adjCard(item,remClass,done){
   var absOrig=Math.abs(item.origDiff);
   var absRem =Math.abs(item.remaining);
-  return '<div class="adj-card '+remClass+(done?' done':'')+'" id="adj-card-'+item.id+'">'+
-    '<div class="adj-name-row">'+
-      '<div class="adj-name">'+item.name+'</div>'+
-      '<div class="adj-code">'+item.id+'</div>'+
-    '</div>'+
-    '<div class="adj-numbers">'+
-      '<div class="adj-remaining-wrap">'+
-        '<div class="adj-remaining-label">Remaining</div>'+
-        '<div class="adj-remaining '+remClass+'" id="adj-rem-'+item.id+'">'+absRem+'</div>'+
-        '<div class="adj-orig">of '+absOrig+' total</div>'+
+  return '<div class="adj-card '+remClass+(done?' done':'')+'" id="adj-card-'+item.id+'" style="padding:10px 12px;margin-bottom:6px;">'+
+    '<div style="display:flex;align-items:center;gap:8px;">'+
+      (done?
+        '<span style="font-size:20px;flex-shrink:0;">✅</span>':
+        '<button class="adj-btn minus" onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',false)" style="width:38px;height:38px;flex-shrink:0;">−</button>'
+      )+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+item.name+'</div>'+
+        '<div style="font-size:11px;color:var(--blue);font-weight:700;">'+item.id+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);" id="adj-upd-'+item.id+'">'+(item.updatedBy&&item.updatedBy!=='System'?item.updatedBy:'')+
+        '</div>'+
       '</div>'+
-      '<div class="adj-btn-group">'+
-        (done?'<span style="font-size:24px;">✅</span>':
-          '<button class="adj-btn minus" onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',false)">−</button>'+
-          '<button class="adj-btn plus"  onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',true)">+</button>'+
-          '<button class="adj-btn undo"  onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',\'undo\')">↩</button>'
-        )+
+      '<div style="text-align:center;flex-shrink:0;min-width:44px;">'+
+        '<div style="font-size:22px;font-weight:700;" class="adj-remaining '+remClass+'" id="adj-rem-'+item.id+'">'+absRem+'</div>'+
+        '<div style="font-size:10px;color:var(--muted);">of '+absOrig+'</div>'+
       '</div>'+
-    '</div>'+
-    '<div class="adj-updater" id="adj-upd-'+item.id+'">'+
-      (item.updatedBy&&item.updatedBy!=='System'?'Last: '+item.updatedBy+' at '+item.updatedAt:'Not started yet')+
+      (done?'':
+        '<button class="adj-btn plus" onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',true)" style="width:38px;height:38px;flex-shrink:0;">+</button>'+
+        '<button class="adj-btn undo" onclick="doAdjust(\''+item.id+'\',1,\''+item.type+'\',\'undo\')" style="width:34px;height:34px;flex-shrink:0;font-size:14px;">↩</button>'
+      )+
     '</div>'+
   '</div>';
 }
