@@ -317,6 +317,7 @@
     <button class="ftab" onclick="setInvFilter('missing',this)">🔴 Missing</button>
     <button class="ftab" onclick="setInvFilter('extra',this)">🟢 Extra</button>
     <button class="ftab" onclick="setInvFilter('match',this)">⚪ Match</button>
+    <button class="ftab" onclick="setInvFilter('es400',this)">🛴 ES400</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
     <span style="font-size:11px;color:#1b5e20;background:#e8f5e9;padding:3px 10px;border-radius:12px;font-weight:600;">📦 Physical</span>
@@ -718,7 +719,7 @@ function filterInventory(){
   var q=(document.getElementById('inv-search').value||'').toLowerCase(), filter=S.invFilter;
   var list=S.invData.filter(function(r){
     var matchQ=!q||r.name.toLowerCase().indexOf(q)!==-1||r.id.toLowerCase().indexOf(q)!==-1;
-    var matchF=filter==='all'||(filter==='missing'&&r.diff<0)||(filter==='extra'&&r.diff>0)||(filter==='match'&&r.diff===0);
+    var matchF=filter==='all'||(filter==='missing'&&r.diff<0)||(filter==='extra'&&r.diff>0)||(filter==='match'&&r.diff===0)||(filter==='es400'&&r.isES400);
     return matchQ&&matchF;
   });
   document.getElementById('inv-info').textContent=list.length+' parts shown';
