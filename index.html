@@ -726,7 +726,7 @@ function renderAdjustment(){
   html+='<div class="adj-col-header reduce">📉 Reduce<br><small style="font-weight:400;">Log in Charger</small><br>('+data.reduce.length+')</div>';
   html+='<div class="adj-col-list" id="adj-reduce-list">';
   if (data.reduce.length===0) { html+='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">✅ All done!</div>'; }
-  else { data.reduce.forEach(function(item){ html+=adjCard(item,'reduce',item.remaining===0); }); }
+  else {   data.reduce.slice().sort(function(a,b){ return Math.abs(b.remaining)-Math.abs(a.remaining); }).forEach(function(item){ html+=adjCard(item,'reduce',item.remaining===0); }); }
   html+='</div></div>';
 
   // RIGHT — Use Free
@@ -734,7 +734,7 @@ function renderAdjustment(){
   html+='<div class="adj-col-header usefree">📦 Use Free<br><small style="font-weight:400;">No logging needed</small><br>('+data.useFree.length+')</div>';
   html+='<div class="adj-col-list" id="adj-usefree-list">';
   if (data.useFree.length===0) { html+='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">✅ All done!</div>'; }
-  else { data.useFree.forEach(function(item){ html+=adjCard(item,'usefree',item.remaining===0); }); }
+  else { data.useFree.slice().sort(function(a,b){ return Math.abs(b.remaining)-Math.abs(a.remaining); }).forEach(function(item){ html+=adjCard(item,'usefree',item.remaining===0); }); }
   html+='</div></div>';
 
   html+='</div>';
