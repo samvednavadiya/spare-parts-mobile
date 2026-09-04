@@ -531,6 +531,7 @@ function showScreen(name,btn){
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
+  try{localStorage.setItem('lastScreen',name);}catch(e){}
   if(name==='home')renderHome();if(name==='count')loadCountScreen();if(name==='stock')renderStock();
   if(name==='log')initLog();if(name==='history')renderHistory();if(name==='alerts')renderAlerts();
   if(name==='storage')initStorageScreen();if(name==='inventory')loadInventoryScreen();
