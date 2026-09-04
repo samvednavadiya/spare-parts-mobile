@@ -763,10 +763,25 @@ function saveConfirm(itemCode,type){
   var qty=Math.max(1,parseInt(qtyEl?qtyEl.value:1)||1);
   var isUndo=pending.action==='undo';
   cancelConfirm(itemCode);
-  api({action:'updateAdjustment',pin:S.user.pin,itemCode:itemCode,changeQty:qty,isUndo:isUndo?'true':'false',managerOverride:'false'})
+    api({action:'updateAdjustment',pin:S.user.pin,itemCode:itemCode,changeQty:qty,isUndo:isUndo?'true':'false',managerOverride:'false'})
   .then(function(r){
     if(!r.success){showToast('❌ '+r.error,'error');return;}
-    updateAdjCardUI(itemCode,type,r.remaining,r.updatedBy);
+    var allItems=S.adjData.reduce.concat(S.adjData.useFree);
+    var item=allItems.find(function(i){return i.id===itemCode;});
+    if(item) item.remaining=r.remaining;
+    var remEl=document.getElementById('adj-rem-'+itemCode);
+    var updEl=document.getElementById('adj-upd-'+itemCode);
+    var card =document.getElementById('adj-card-'+itemCode);
+    if(remEl) remEl.textContent=Math.abs(r.remaining);
+    if(updEl) updEl.textContent='👤 '+r.updatedBy;
+    var remClass=type==='Reduce'?'reduce':'usefree';
+    if(r.remaining===0){
+      if(remEl) remEl.className='adj-remaining done';
+      if(card)  card.classList.add('done');
+    } else {
+      if(remEl) remEl.className='adj-remaining '+remClass;
+      if(card)  card.classList.remove('done');
+    }
     showToast(isUndo?'↩ Undone '+qty+'!':'✅ Saved '+qty+'!','success');
   });
 }
