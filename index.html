@@ -988,7 +988,12 @@ document.addEventListener('click',function(e){
 
 // INIT
 window.onload=function(){
-  var savedUser=loadSession();if(savedUser){startApp(savedUser);}
+  var savedUser=loadSession();
+  if(savedUser){
+    // Restore last screen
+    var lastScreen=localStorage.getItem('lastScreen')||'home';
+    startApp(savedUser, lastScreen);
+  }
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/spare-parts-mobile/sw.js').then(function(){}).catch(function(){});}
 };
 </script>
