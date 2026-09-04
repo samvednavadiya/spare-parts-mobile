@@ -714,7 +714,9 @@ function filterAdjList(type,q){
   var el=document.getElementById(listId);
   if(!el)return;
   var ql=q.toLowerCase();
+  // Always sort by highest remaining first
   var filtered=!ql?list:list.filter(function(x){return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1;});
+  filtered=filtered.slice().sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No parts found</div>';return;}
   el.innerHTML=filtered.map(function(item){return adjCard(item,type,item.remaining===0);}).join('');
 }
