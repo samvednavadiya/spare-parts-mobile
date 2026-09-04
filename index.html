@@ -1,1015 +1,985 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Spare Parts Inventory</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-:root {
-  --blue:#1a73e8; --green:#0f9d58; --red:#e53935; --orange:#f4b400; --purple:#4a148c;
-  --bg:#f0f2f5; --white:#ffffff; --border:#e0e0e0; --text:#333333; --muted:#888888; --radius:12px;
-  --bg-home:#e8f0fe; --bg-stock:#e6f4ea; --bg-log:#fff8e1;
-  --bg-history:#f3e5f5; --bg-count:#fffde7; --bg-alerts:#fce8e6; --bg-adjust:#f3e5f5;
-}
-body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; color:var(--text); min-height:100vh; }
-.header { background:var(--blue); color:white; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-.header-title { font-size:17px; font-weight:600; }
-.header-badge { background:rgba(255,255,255,0.25); padding:3px 10px; border-radius:20px; font-size:12px; }
-.header-time { font-size:11px; opacity:0.8; }
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); }
-.nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:8px 2px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:9px; font-family:inherit; position:relative; transition:color 0.15s; }
-.nav-btn.active { color:var(--blue); }
-.nav-btn .icon { font-size:18px; margin-bottom:2px; }
-.nav-badge { position:absolute; top:4px; right:calc(50% - 18px); background:var(--red); color:white; border-radius:10px; padding:1px 5px; font-size:10px; font-weight:600; min-width:16px; text-align:center; }
-.page { display:none; padding:16px 16px 80px; animation:fadeIn 0.2s; min-height:100vh; }
-.page.active { display:block; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
-#page-home { background:var(--bg-home); }
-#page-stock { background:var(--bg-stock); }
-#page-log { background:var(--bg-log); }
-#page-history { background:var(--bg-history); }
-#page-count { background:var(--bg-count); }
-#page-alerts { background:var(--bg-alerts); }
-#page-adjust { background:var(--bg-adjust); }
-.cards-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-.stat-card { background:white; border-radius:var(--radius); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-.stat-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
-.stat-value { font-size:26px; font-weight:700; }
-.stat-value.blue { color:var(--blue); }
-.stat-value.green { color:var(--green); }
-.stat-value.red { color:var(--red); }
-.stat-value.orange { color:var(--orange); }
-.section-title { font-size:15px; font-weight:600; margin:16px 0 10px; }
-.search-wrap { background:white; border-radius:var(--radius); padding:10px 14px; display:flex; align-items:center; gap:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-.search-wrap input { border:none; outline:none; flex:1; font-size:15px; font-family:inherit; color:var(--text); background:transparent; }
-.filter-row { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
-.filter-row::-webkit-scrollbar { display:none; }
-.ftab { padding:5px 14px; border-radius:20px; border:1px solid var(--border); background:white; font-size:12px; cursor:pointer; white-space:nowrap; color:var(--text); font-family:inherit; }
-.ftab.active { background:var(--blue); color:white; border-color:var(--blue); }
-.part-card { background:white; border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--border); }
-.part-card.ok { border-left-color:var(--green); }
-.part-card.low { border-left-color:var(--red); }
-.part-header { display:flex; align-items:center; flex-wrap:wrap; gap:2px; }
-.part-id-tag { font-size:13px; font-weight:700; color:var(--blue); white-space:nowrap; }
-.part-sep { font-size:13px; color:var(--muted); }
-.part-name-tag { font-size:13px; font-weight:500; color:var(--text); line-height:1.3; }
-.part-stocks { display:flex; gap:12px; margin-top:8px; }
-.stock-box { text-align:center; }
-.stock-lbl { font-size:10px; color:var(--muted); margin-bottom:3px; }
-.stock-val { font-size:20px; font-weight:700; padding:2px 10px; border-radius:8px; display:inline-block; }
-.storage-qty { color:#1565c0; background:#e3f2fd; }
-.mechanic-qty { color:#6a1b9a; background:#f3e5f5; }
-.total-qty { color:#e65100; background:#fff3e0; }
-.low-qty { color:white; background:var(--red); }
-.mov-card { background:white; border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--blue); }
-.mov-card.incoming { border-left-color:var(--green); }
-.mov-card.transfer { border-left-color:var(--orange); }
-.mov-card.sent { border-left-color:var(--red); }
-.mov-card.received { border-left-color:var(--blue); }
-.mov-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-.mov-type { font-size:11px; font-weight:600; text-transform:uppercase; }
-.mov-type.incoming { color:var(--green); }
-.mov-type.transfer { color:var(--orange); }
-.mov-type.sent { color:var(--red); }
-.mov-type.received { color:var(--blue); }
-.mov-qty { font-size:18px; font-weight:700; }
-.mov-name { font-size:13px; font-weight:500; margin-bottom:3px; }
-.mov-meta { font-size:11px; color:var(--muted); }
-.form-card { background:white; border-radius:var(--radius); padding:18px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:12px; }
-.form-group { margin-bottom:14px; }
-.form-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:6px; display:block; text-transform:uppercase; }
-.form-input,.form-select { width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:8px; font-size:15px; font-family:inherit; color:var(--text); background:white; outline:none; transition:border-color 0.15s; appearance:none; }
-.form-input:focus,.form-select:focus { border-color:var(--blue); }
-.qr-btn { width:100%; padding:13px; background:#e8f0fe; border:2px dashed var(--blue); border-radius:8px; color:var(--blue); font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px; }
-.selected-part { background:#e8f0fe; border:1.5px solid var(--blue); border-radius:8px; padding:11px 13px; margin-bottom:14px; }
-.sel-name { font-size:14px; font-weight:600; color:var(--blue); }
-.sel-code { font-size:11px; color:var(--muted); margin-top:2px; }
-.sel-stock { font-size:12px; color:#555; margin-top:5px; }
-.search-dropdown { position:absolute; background:white; border:1.5px solid var(--border); border-radius:8px; max-height:220px; overflow-y:auto; z-index:200; width:calc(100% - 32px); box-shadow:0 4px 16px rgba(0,0,0,0.12); }
-.sdrop-item { padding:11px 13px; cursor:pointer; border-bottom:1px solid #f5f5f5; }
-.sdrop-item:hover { background:#f5f5f5; }
-.sdrop-item:last-child { border-bottom:none; }
-.sdrop-name { font-size:13px; font-weight:500; }
-.sdrop-meta { font-size:11px; color:var(--muted); margin-top:2px; }
-.submit-btn { width:100%; padding:15px; background:var(--blue); color:white; border:none; border-radius:var(--radius); font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
-.submit-btn:disabled { opacity:0.5; }
-.submit-btn:active { opacity:0.85; }
-.toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:11px 22px; border-radius:24px; font-size:14px; z-index:300; display:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:calc(100vw - 32px); text-align:center; }
-.toast.success { background:var(--green); }
-.toast.error { background:var(--red); }
-.loading { text-align:center; padding:48px 16px; color:var(--muted); }
-.spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 12px; }
-@keyframes spin { to{transform:rotate(360deg);} }
-.empty { text-align:center; padding:48px 16px; color:var(--muted); font-size:15px; }
-.empty-icon { font-size:48px; margin-bottom:12px; }
-.alert-card { background:white; border:1px solid #ffcdd2; border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; }
-.alert-title { font-size:13px; font-weight:600; color:var(--red); margin-bottom:6px; }
-.alert-row { display:flex; justify-content:space-between; font-size:12px; color:#666; margin-bottom:3px; }
-.alert-val { font-weight:600; color:var(--red); }
-.count-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
-.count-admin { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
-.session-badge { padding:12px 16px; border-radius:12px; margin-bottom:12px; font-weight:600; text-align:center; font-size:14px; }
-.session-badge.inactive { background:#f5f5f5; color:var(--muted); }
-.session-badge.active { background:#e8f5e9; color:var(--green); }
-.session-badge.locked { background:#fce8e6; color:var(--red); }
-.session-badge.approved { background:#e8f0fe; color:var(--blue); }
-.session-badge.closed { background:#f3e5f5; color:var(--purple); }
-.mgr-btn-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-.mgr-btn { flex:1; padding:12px 8px; border:none; border-radius:10px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; min-width:100px; text-align:center; }
-.mgr-btn:active { opacity:0.85; }
-.mgr-btn.start { background:var(--green); color:white; }
-.mgr-btn.lock { background:var(--red); color:white; }
-.mgr-btn.unlock { background:var(--orange); color:white; }
-.mgr-btn.approve { background:var(--blue); color:white; }
-.mgr-btn.close { background:var(--purple); color:white; }
-.count-name-badge { background:#e8f0fe; border:1px solid var(--blue); border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:13px; font-weight:600; color:var(--blue); text-align:center; }
-.info-box { border-radius:10px; padding:12px 14px; margin-bottom:12px; font-size:12px; line-height:1.6; }
-.info-box.blue { background:#e8f0fe; border:1px solid var(--blue); color:#1a237e; }
-.info-box.green { background:#e8f5e9; border:1px solid var(--green); color:#1b5e20; }
-.info-box-title { font-size:13px; font-weight:700; margin-bottom:4px; }
-.count-tabs { display:flex; gap:0; margin-bottom:12px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-.count-tab { flex:1; padding:10px; border:none; background:none; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; color:var(--muted); transition:all 0.15s; }
-.count-tab.active { background:var(--blue); color:white; }
-.count-tab.green-active { background:var(--green); color:white; }
-.pending-card { background:white; border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; }
-.mcount-card { background:white; border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--green); }
-.mcount-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-.mcount-qty { font-size:24px; font-weight:700; color:var(--blue); }
-.mcount-who { font-size:11px; color:var(--muted); text-align:right; }
-
-/* ── ADJUSTMENT STYLES ─────────────────────────────────── */
-.adj-columns { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.adj-col { background:white; border-radius:var(--radius); padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); overflow:hidden; }
-.adj-col-title { font-size:13px; font-weight:700; padding:8px 10px; border-radius:8px; margin-bottom:10px; text-align:center; }
-.adj-col-title.reduce { background:#fce8e6; color:#c62828; }
-.adj-col-title.usefree { background:#e8f5e9; color:#1b5e20; }
-.adj-search { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; margin-bottom:8px; outline:none; }
-.adj-scroll { max-height:calc(100vh - 260px); overflow-y:auto; }
-.adj-card { background:#fafafa; border-radius:8px; padding:10px; margin-bottom:6px; border:1px solid var(--border); }
-.adj-card.reduce-card { border-left:3px solid #e53935; }
-.adj-card.usefree-card { border-left:3px solid #0f9d58; }
-.adj-name { font-size:11px; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:4px; word-break:break-word; }
-.adj-code { font-size:10px; color:var(--muted); margin-bottom:6px; }
-.adj-diff-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-.adj-diff-label { font-size:10px; color:var(--muted); }
-.adj-remaining { font-size:16px; font-weight:700; }
-.adj-remaining.negative { color:#c62828; }
-.adj-remaining.positive { color:#1b5e20; }
-.adj-remaining.zero { color:#666; }
-.adj-btn-row { display:flex; gap:6px; }
-.adj-adjust-btn { flex:1; padding:8px; background:var(--blue); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
-.adj-undo-btn { padding:8px 10px; background:#fff3e0; color:#e65100; border:1px solid #ffe0b2; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
-.adj-input-row { display:flex; gap:6px; margin-top:6px; }
-.adj-qty-input { flex:1; padding:8px; border:1.5px solid var(--blue); border-radius:8px; font-size:15px; font-family:inherit; text-align:center; outline:none; }
-.adj-save-btn { padding:8px 14px; background:var(--green); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; }
-.adj-cancel-btn { padding:8px 10px; background:#f5f5f5; color:#666; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; cursor:pointer; }
-.adj-resolved { font-size:11px; color:#1b5e20; font-weight:600; text-align:center; padding:4px; background:#e8f5e9; border-radius:6px; }
-/* Manager override panel */
-.mgr-override-panel { background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:10px; margin-bottom:10px; }
-.mgr-override-title { font-size:12px; font-weight:700; color:#e65100; margin-bottom:8px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Spare Parts">
+  <title>Spare Parts — Wolfsburg</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1a73e8">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    :root {
+      --blue:#1a73e8; --green:#0f9d58; --red:#e53935; --orange:#f4b400; --purple:#4a148c;
+      --bg:#f0f2f5; --white:#ffffff; --border:#e0e0e0; --text:#333333; --muted:#888888; --radius:14px;
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; }
+    .bottom-nav { position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); overflow-x:auto; }
+    .nav-btn { flex:1; min-width:48px; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:9px; font-family:inherit; transition:color 0.15s; }
+    .nav-btn.active { color:var(--blue); }
+    .nav-btn .icon { font-size:20px; margin-bottom:2px; }
+    .screen { display:none; padding:16px 16px 90px; min-height:100vh; animation:fadeIn 0.2s; }
+    .screen.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+    #screen-login      { background:var(--blue); padding:0; display:flex; flex-direction:column; justify-content:center; min-height:100vh; }
+    #screen-home       { background:#e8f0fe; }
+    #screen-count      { background:#e8f5e9; }
+    #screen-stock      { background:#e6f4ea; }
+    #screen-log        { background:#fff8e1; }
+    #screen-history    { background:#f3e5f5; }
+    #screen-alerts     { background:#fce8e6; }
+    #screen-storage    { background:#e8f5e9; }
+    #screen-inventory  { background:#fffde7; }
+    #screen-adjustment { background:#f3e5f5; }
+    .login-box   { background:white; margin:24px 20px; border-radius:20px; padding:32px 24px; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
+    .login-logo  { font-size:48px; text-align:center; margin-bottom:8px; }
+    .login-title { font-size:22px; font-weight:700; text-align:center; color:var(--blue); margin-bottom:4px; }
+    .login-sub   { font-size:14px; color:var(--muted); text-align:center; margin-bottom:28px; }
+    .pin-label   { font-size:13px; color:var(--muted); font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
+    .pin-input   { width:100%; padding:16px; border:2px solid var(--border); border-radius:12px; font-size:24px; text-align:center; letter-spacing:8px; outline:none; font-family:inherit; color:var(--text); transition:border-color 0.15s; }
+    .pin-input:focus { border-color:var(--blue); }
+    .pin-error   { color:var(--red); font-size:13px; text-align:center; margin-top:8px; min-height:20px; }
+    .login-btn   { width:100%; padding:16px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:17px; font-weight:600; cursor:pointer; font-family:inherit; margin-top:16px; transition:opacity 0.15s; }
+    .login-btn:active { opacity:0.85; }
+    .login-btn:disabled { opacity:0.5; }
+    .cards-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .stat-card  { background:white; border-radius:var(--radius); padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .stat-label { font-size:12px; color:var(--muted); margin-bottom:4px; }
+    .stat-value { font-size:28px; font-weight:700; }
+    .blue{color:var(--blue);} .green{color:var(--green);} .red{color:var(--red);} .orange{color:var(--orange);}
+    .section-title { font-size:16px; font-weight:600; margin:16px 0 10px; }
+    .progress-wrap  { background:white; border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .progress-top   { display:flex; justify-content:space-between; margin-bottom:8px; }
+    .progress-label { font-size:14px; font-weight:600; }
+    .progress-pct   { font-size:14px; font-weight:700; color:var(--blue); }
+    .progress-bar   { height:10px; background:#e0e0e0; border-radius:5px; overflow:hidden; }
+    .progress-fill  { height:100%; background:var(--green); border-radius:5px; transition:width 0.5s; }
+    .search-wrap { background:white; border-radius:var(--radius); padding:12px 16px; display:flex; align-items:center; gap:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .search-wrap input { border:none; outline:none; flex:1; font-size:15px; font-family:inherit; color:var(--text); background:transparent; }
+    .filter-row { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .filter-row::-webkit-scrollbar { display:none; }
+    .ftab { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:white; font-size:13px; cursor:pointer; white-space:nowrap; font-family:inherit; }
+    .ftab.active { background:var(--blue); color:white; border-color:var(--blue); }
+    .part-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--border); }
+    .part-card.ok  { border-left-color:var(--green); }
+    .part-card.low { border-left-color:var(--red); }
+    .part-header { display:flex; align-items:center; flex-wrap:wrap; gap:3px; margin-bottom:10px; }
+    .part-id   { font-size:14px; font-weight:700; color:var(--blue); }
+    .part-sep  { font-size:14px; color:var(--muted); }
+    .part-name { font-size:14px; font-weight:500; color:var(--text); line-height:1.3; }
+    .part-stocks { display:flex; gap:12px; }
+    .stock-box   { text-align:center; }
+    .stock-lbl   { font-size:10px; color:var(--muted); margin-bottom:3px; }
+    .stock-val   { font-size:22px; font-weight:700; padding:2px 10px; border-radius:8px; display:inline-block; }
+    .storage-qty  { color:#1565c0; background:#e3f2fd; }
+    .mechanic-qty { color:#6a1b9a; background:#f3e5f5; }
+    .total-qty    { color:#e65100; background:#fff3e0; }
+    .low-qty      { color:white; background:var(--red); }
+    .count-card         { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .count-card.counted { border-left:4px solid var(--green); }
+    .count-qty-show     { font-size:28px; font-weight:700; color:var(--blue); }
+    .form-card  { background:white; border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:12px; }
+    .form-group { margin-bottom:16px; }
+    .form-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
+    .form-input,.form-select { width:100%; padding:14px; border:2px solid var(--border); border-radius:10px; font-size:16px; font-family:inherit; color:var(--text); background:white; outline:none; transition:border-color 0.15s; appearance:none; }
+    .form-input:focus,.form-select:focus { border-color:var(--blue); }
+    .count-input   { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; }
+    .storage-input { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; color:#1565c0; }
+    .qr-btn { width:100%; padding:16px; background:#e8f0fe; border:2px dashed var(--blue); border-radius:10px; color:var(--blue); font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; }
+    .sel-part { background:#e8f0fe; border:2px solid var(--blue); border-radius:10px; padding:14px; margin-bottom:16px; }
+    .sel-id   { font-size:15px; font-weight:700; color:var(--blue); }
+    .sel-name { font-size:15px; font-weight:500; color:var(--text); margin-top:2px; }
+    .sel-info { font-size:12px; color:var(--muted); margin-top:6px; }
+    .sdrop      { position:absolute; background:white; border:2px solid var(--border); border-radius:10px; max-height:240px; overflow-y:auto; z-index:200; width:calc(100% - 32px); box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+    .sdrop-item { padding:14px 16px; cursor:pointer; border-bottom:1px solid #f5f5f5; }
+    .sdrop-item:last-child { border-bottom:none; }
+    .sdrop-item:active { background:#f5f5f5; }
+    .sdrop-id   { font-size:13px; font-weight:700; color:var(--blue); }
+    .sdrop-name { font-size:13px; color:var(--text); margin-top:2px; }
+    .sdrop-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+    .submit-btn           { width:100%; padding:18px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:18px; font-weight:700; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
+    .submit-btn:active    { opacity:0.85; }
+    .submit-btn.green-btn { background:var(--green); }
+    .mgr-btn-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .mgr-btn        { flex:1; min-width:100px; padding:14px; border:none; border-radius:12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
+    .mgr-btn:active { opacity:0.85; }
+    .mgr-btn.start   { background:var(--green);  color:white; }
+    .mgr-btn.lock    { background:var(--red);    color:white; }
+    .mgr-btn.unlock  { background:var(--orange); color:white; }
+    .mgr-btn.approve { background:var(--purple); color:white; }
+    .mgr-btn.close   { background:#333;          color:white; }
+    .session-status          { border-radius:12px; padding:14px 16px; margin-bottom:16px; font-size:14px; font-weight:600; text-align:center; }
+    .session-status.inactive { background:#f5f5f5; color:var(--muted); }
+    .session-status.active   { background:#e8f5e9; color:var(--green); }
+    .session-status.locked   { background:#fce8e6; color:var(--red); }
+    .session-status.approved { background:#f3e5f5; color:var(--purple); }
+    .session-status.closed   { background:#333;    color:white; }
+    .mov-card          { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--blue); }
+    .mov-card.incoming { border-left-color:var(--green); }
+    .mov-card.transfer { border-left-color:var(--orange); }
+    .mov-card.sent     { border-left-color:var(--red); }
+    .mov-card.received { border-left-color:var(--blue); }
+    .mov-top  { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .mov-type { font-size:11px; font-weight:700; text-transform:uppercase; }
+    .mov-qty  { font-size:18px; font-weight:700; }
+    .mov-name { font-size:14px; font-weight:500; margin-bottom:3px; }
+    .mov-meta { font-size:11px; color:var(--muted); }
+    .alert-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; border:1px solid #ffcdd2; }
+    .alert-name { font-size:14px; font-weight:600; color:var(--red); margin-bottom:6px; }
+    .alert-row  { display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:3px; }
+    .alert-val  { font-weight:700; color:var(--red); }
+    .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:12px 24px; border-radius:24px; font-size:14px; z-index:300; display:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:calc(100vw - 32px); text-align:center; }
+    .toast.success { background:var(--green); }
+    .toast.error   { background:var(--red); }
+    .loading    { text-align:center; padding:60px 16px; color:var(--muted); }
+    .spinner    { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+    .empty      { text-align:center; padding:60px 16px; color:var(--muted); font-size:15px; }
+    .empty-icon { font-size:56px; margin-bottom:14px; }
+    .modal-overlay      { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:400; display:none; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.show { display:flex; }
+    .modal-box          { background:white; border-radius:20px; padding:24px; width:100%; max-width:380px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+    .modal-title        { font-size:18px; font-weight:700; margin-bottom:12px; }
+    .modal-text         { font-size:14px; color:#555; margin-bottom:20px; line-height:1.5; }
+    .modal-btns         { display:flex; gap:10px; }
+    .modal-btn          { flex:1; padding:14px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .modal-btn.cancel   { background:#f5f5f5; color:var(--text); }
+    .modal-btn.override { background:var(--red); color:white; }
+    .storage-info       { background:#e3f2fd; border:2px solid #1565c0; border-radius:12px; padding:14px 16px; margin-bottom:16px; text-align:center; }
+    .storage-info-title { font-size:14px; font-weight:700; color:#1565c0; margin-bottom:4px; }
+    .storage-info-sub   { font-size:12px; color:#555; }
+    .live-badge { display:inline-block; background:#e8f5e9; color:var(--green); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+    .qr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; }
+    .qr-overlay.show { display:flex; }
+    .qr-header { color:white; font-size:18px; font-weight:600; margin-bottom:20px; text-align:center; padding:0 20px; }
+    .qr-video-wrap { position:relative; width:300px; height:300px; border-radius:16px; overflow:hidden; background:#000; }
+    .qr-video { width:100%; height:100%; object-fit:cover; display:block; }
+    .qr-frame { position:absolute; inset:0; border:3px solid var(--blue); border-radius:16px; pointer-events:none; }
+    .qr-line  { position:absolute; left:10%; right:10%; height:2px; background:var(--blue); animation:scan 2s linear infinite; box-shadow:0 0 8px var(--blue); }
+    @keyframes scan { 0%{top:10%;} 100%{top:90%;} }
+    .qr-corners::before,.qr-corners::after { content:''; position:absolute; width:24px; height:24px; border-color:white; border-style:solid; }
+    .qr-corners::before { top:8px; left:8px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .qr-corners::after  { bottom:8px; right:8px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+    .qr-hint   { color:rgba(255,255,255,0.7); font-size:14px; margin-top:16px; text-align:center; padding:0 20px; }
+    .qr-cancel { margin-top:24px; padding:14px 40px; background:white; color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; width:100%; }
+    .count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .count-tab  { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
+    .count-tab.active { background:var(--blue); color:white; }
+    .count-tab.green-tab.active { background:var(--green); color:white; }
+    .count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
+    .inv-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .inv-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
+    .inv-admin    { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
+    /* Adjustment */
+    .adj-count-info { background:#f3e5f5; border:2px solid var(--purple); border-radius:12px; padding:10px 16px; margin-bottom:10px; text-align:center; }
+    .adj-count-name { font-size:14px; font-weight:700; color:var(--purple); }
+    .adj-count-sub  { font-size:12px; color:#555; margin-top:2px; }
+    .adj-live-badge { display:inline-block; background:#e8f0fe; color:var(--blue); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-bottom:10px; animation:pulse 2s infinite; }
+    .adj-columns { display:flex; gap:8px; height:calc(100vh - 220px); }
+    .adj-col { flex:1; display:flex; flex-direction:column; min-width:0; }
+    .adj-col-header { padding:8px 6px; border-radius:10px; font-size:11px; font-weight:700; margin-bottom:6px; text-align:center; flex-shrink:0; line-height:1.4; }
+    .adj-col-header.reduce  { background:#fce8e6; color:#c62828; }
+    .adj-col-header.usefree { background:#e8f5e9; color:#1b5e20; }
+    .adj-search { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:12px; font-family:inherit; margin-bottom:6px; outline:none; flex-shrink:0; }
+    .adj-col-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .adj-col-list::-webkit-scrollbar { width:3px; }
+    .adj-col-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    .adj-card { background:white; border-radius:10px; padding:8px 10px; margin-bottom:6px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .adj-card.reduce  { border-left:3px solid var(--red); }
+    .adj-card.usefree { border-left:3px solid var(--green); }
+    .adj-card.done    { border-left:3px solid var(--muted); opacity:0.5; }
+    .adj-remaining { font-size:22px; font-weight:700; }
+    .adj-remaining.reduce  { color:#c62828; }
+    .adj-remaining.usefree { color:#1b5e20; }
+    .adj-remaining.done    { color:var(--muted); }
+    .adj-btn { border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; transition:opacity 0.15s; }
+    .adj-btn:active { opacity:0.7; }
+    .adj-btn.adjust { background:var(--blue); color:white; padding:6px 10px; font-size:12px; flex:1; }
+    .adj-btn.undo   { background:#fff8e1; color:#b45309; width:30px; height:30px; font-size:14px; }
+    .adj-confirm { background:#f0f4ff; border:1px solid var(--blue); border-radius:8px; padding:8px; margin-top:6px; display:none; }
+    .adj-confirm.show { display:block; }
+    .adj-qty-row { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+    .adj-qty-input { width:44px; height:32px; border:2px solid var(--blue); border-radius:8px; text-align:center; font-size:16px; font-weight:700; font-family:inherit; outline:none; }
+    .adj-save-btn { flex:1; padding:7px; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .adj-cancel-btn { padding:7px 8px; background:#e0e0e0; color:var(--text); border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .mgr-override-box { background:#fff3e0; border:1px solid #ffe0b2; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+    .mgr-override-title { font-size:12px; font-weight:700; color:#e65100; margin-bottom:6px; }
+    .mgr-override-row { display:flex; gap:6px; align-items:center; }
+    .mgr-override-input { flex:1; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; }
+    .mgr-override-qty { width:60px; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; text-align:center; }
+  </style>
 </head>
 <body>
 
-<div class="header">
-<div>
-  <div class="header-title">🔧 Spare Parts</div>
-  <div class="header-time" id="header-time">Wolfsburg</div>
-</div>
-<span class="header-badge" id="header-badge">Loading...</span>
-</div>
-
 <div class="toast" id="toast"></div>
 
+<!-- QR SCANNER -->
+<div class="qr-overlay" id="qr-overlay">
+  <div class="qr-header" id="qr-header">📷 Scan QR Code</div>
+  <div class="qr-video-wrap">
+    <video class="qr-video" id="qr-video" autoplay muted playsinline></video>
+    <div class="qr-frame"><div class="qr-line"></div><div class="qr-corners"></div></div>
+  </div>
+  <div class="qr-hint">Point camera at the QR code on the box</div>
+  <div class="qr-status" id="qr-status"></div>
+  <button class="qr-cancel" onclick="stopQRScan()">✕ Cancel</button>
+</div>
+
+<!-- OVERRIDE MODAL -->
+<div class="modal-overlay" id="override-modal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Already Counted</div>
+    <div class="modal-text" id="override-text"></div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel"   onclick="closeOverrideModal()">Cancel</button>
+      <button class="modal-btn override" onclick="confirmOverride()">Override</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen active" id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">🔧</div>
+    <div class="login-title">Spare Parts</div>
+    <div class="login-sub">Wolfsburg Inventory</div>
+    <div class="pin-label">Enter your PIN</div>
+    <input type="password" inputmode="numeric" class="pin-input" id="pin-input"
+           placeholder="••••" maxlength="6"
+           onkeyup="if(event.key==='Enter') doLogin()">
+    <div class="pin-error" id="pin-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
 <!-- HOME -->
-<div class="page active" id="page-home">
-<div id="home-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
-</div>
-
-<!-- STOCK -->
-<div class="page" id="page-stock">
-<div class="search-wrap">
-  <span>🔍</span>
-  <input type="text" id="stock-search" placeholder="Search by name or item code..." oninput="filterStock()">
-  <button onclick="document.getElementById('stock-search').value='';filterStock();" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;">✕</button>
-</div>
-<div class="filter-row">
-  <button class="ftab active" onclick="setStockFilter('all',this)">All</button>
-  <button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low Stock</button>
-  <button class="ftab" onclick="setStockFilter('storage',this)">📦 Storage</button>
-  <button class="ftab" onclick="setStockFilter('mechanic',this)">🔧 Mechanic</button>
-</div>
-<div id="stock-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
-<div id="stock-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
-</div>
-
-<!-- LOG -->
-<div class="page" id="page-log">
-<div class="form-card">
-  <div class="section-title" style="margin-top:0;">Log Stock Movement</div>
-  <button class="qr-btn" onclick="startQRScan()">📷 Scan QR Code on Box</button>
-  <div class="form-group" style="position:relative;">
-    <label class="form-label">Search Spare Part</label>
-    <input type="text" class="form-input" id="part-search" placeholder="Type name or item code..." oninput="onPartSearch(this.value)" autocomplete="off">
-    <div class="search-dropdown" id="search-drop" style="display:none;"></div>
-  </div>
-  <div class="selected-part" id="sel-part" style="display:none;">
-    <div class="sel-name" id="sel-name"></div>
-    <div class="sel-code" id="sel-code"></div>
-    <div class="sel-stock" id="sel-stock"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="mov-date"></div>
-  <div class="form-group">
-    <label class="form-label">Movement Type</label>
-    <select class="form-select" id="mov-type" onchange="onTypeChange()">
-      <option value="">Select type...</option>
-      <option value="Incoming from supplier">📥 Incoming from supplier</option>
-      <option value="Transfer to mechanic">🔧 Transfer to mechanic</option>
-      <option value="Sent to other city">🚚 Sent to other city</option>
-      <option value="Received from other city">📦 Received from other city</option>
-    </select>
-  </div>
-  <div class="form-group"><label class="form-label">Quantity</label><input type="number" class="form-input" id="mov-qty" placeholder="Enter quantity..." min="1"></div>
-  <div class="form-group" id="city-group" style="display:none;"><label class="form-label">City</label><input type="text" class="form-input" id="mov-city" placeholder="Enter city name..."></div>
-  <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="mov-notes" placeholder="Any notes..."></div>
-  <button class="submit-btn" id="submit-btn" onclick="submitMovement()">Submit Movement</button>
-</div>
-</div>
-
-<!-- HISTORY -->
-<div class="page" id="page-history">
-<div class="search-wrap">
-  <span>🔍</span>
-  <input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()">
-</div>
-<div id="hist-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div class="screen" id="screen-home">
+  <div id="home-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- COUNT -->
-<div class="page" id="page-count">
-<div id="count-session-area" data-status="inactive"></div>
-<div id="count-progress-wrap"></div>
-<div class="cards-grid" id="count-cards"></div>
-<div id="count-filters-wrap" style="display:none;">
-  <div class="search-wrap">
-    <span>🔍</span>
-    <input type="text" id="count-search" placeholder="Search parts..." oninput="filterCount()">
-  </div>
-  <div class="filter-row">
-    <button class="ftab active" onclick="setCountFilter('all',this)">All</button>
-    <button class="ftab" onclick="setCountFilter('missing',this)">🔴 Missing</button>
-    <button class="ftab" onclick="setCountFilter('extra',this)">🟢 Extra</button>
-    <button class="ftab" onclick="setCountFilter('match',this)">⚪ Match</button>
-    <button class="ftab" onclick="setCountFilter('es400',this)">🛴 ES400</button>
-  </div>
-  <div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
-    <span style="font-size:11px;color:#1b5e20;background:#e8f5e9;padding:3px 10px;border-radius:12px;font-weight:600;">📦 Physical</span>
-    <span style="font-size:11px;color:#1565c0;background:#e3f2fd;padding:3px 10px;border-radius:12px;font-weight:600;">💻 Admin</span>
-    <span style="font-size:11px;color:#c62828;background:#fce8e6;padding:3px 10px;border-radius:12px;font-weight:600;">➖ Missing</span>
-    <span style="font-size:11px;color:#1b5e20;background:#e8f5e9;padding:3px 10px;border-radius:12px;font-weight:600;">➕ Extra</span>
-  </div>
-  <div id="count-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+<div class="screen" id="screen-count">
+  <div id="count-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
-<div id="count-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
-<button onclick="refreshCount()" style="width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:12px;">🔄 Refresh</button>
+
+<!-- STOCK -->
+<div class="screen" id="screen-stock">
+  <div class="search-wrap"><span>🔍</span><input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()"></div>
+  <div class="filter-row">
+    <button class="ftab active" onclick="setStockFilter('all',this)">All</button>
+    <button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low</button>
+    <button class="ftab" onclick="setStockFilter('storage',this)">📦 Storage</button>
+    <button class="ftab" onclick="setStockFilter('mechanic',this)">🔧 Mechanic</button>
+  </div>
+  <div id="stock-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+  <div id="stock-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+</div>
+
+<!-- LOG -->
+<div class="screen" id="screen-log">
+  <div class="form-card">
+    <div class="section-title" style="margin-top:0;">Log Movement</div>
+    <button class="qr-btn" onclick="startQRScan('log')">📷 Scan QR Code</button>
+    <div class="form-group" style="position:relative;">
+      <label class="form-label">Search Part</label>
+      <input type="text" class="form-input" id="log-search" placeholder="Type name or code..." oninput="onLogSearch(this.value)" autocomplete="off">
+      <div class="sdrop" id="log-drop" style="display:none;"></div>
+    </div>
+    <div class="sel-part" id="log-sel" style="display:none;">
+      <div class="sel-id" id="log-sel-id"></div>
+      <div class="sel-name" id="log-sel-name"></div>
+      <div class="sel-info" id="log-sel-info"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="log-date"></div>
+    <div class="form-group">
+      <label class="form-label">Movement Type</label>
+      <select class="form-select" id="log-type" onchange="onLogTypeChange()">
+        <option value="">Select type...</option>
+        <option value="Incoming from supplier">📥 Incoming from supplier</option>
+        <option value="Transfer to mechanic">🔧 Transfer to mechanic</option>
+        <option value="Sent to other city">🚚 Sent to other city</option>
+        <option value="Received from other city">📦 Received from other city</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Quantity</label><input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1"></div>
+    <div class="form-group" id="log-city-group" style="display:none;"><label class="form-label">City</label><input type="text" class="form-input" id="log-city" placeholder="City name..."></div>
+    <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="log-notes" placeholder="Any notes..."></div>
+    <button class="submit-btn" id="log-submit" onclick="submitLog()">Submit Movement</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div class="search-wrap"><span>🔍</span><input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()"></div>
+  <div id="hist-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- ALERTS -->
-<div class="page" id="page-alerts">
-<div id="alerts-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div class="screen" id="screen-alerts">
+  <div id="alerts-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
-<!-- ADJUST -->
-<div class="page" id="page-adjust">
-<div id="adjust-header" style="margin-bottom:10px;">
-  <div style="font-size:13px;font-weight:600;color:var(--purple);background:#f3e5f5;border:1px solid var(--purple);border-radius:8px;padding:8px 12px;text-align:center;" id="adjust-count-name">Loading...</div>
-</div>
-<div id="adjust-manager-panel" style="display:none;">
-  <div class="mgr-override-panel">
-    <div class="mgr-override-title">⚙️ Manager Override</div>
-    <div style="font-size:11px;color:#666;margin-bottom:8px;">Set remaining difference directly for any part.</div>
-    <div style="display:flex;gap:6px;">
-      <input type="text" id="mgr-part-search" placeholder="Search part..." class="adj-search" style="flex:1;margin:0;" oninput="filterMgrSearch(this.value)">
-      <input type="number" id="mgr-override-qty" placeholder="Qty" style="width:70px;padding:8px;border:1.5px solid var(--orange);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
-      <button onclick="applyManagerOverride()" style="padding:8px 12px;background:var(--orange);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Set</button>
+<!-- STORAGE -->
+<div class="screen" id="screen-storage">
+  <div class="storage-info">
+    <div class="storage-info-title">📦 Storage Opening Qty Entry</div>
+    <div class="storage-info-sub">Scan QR or search — enter physical count for Storage Area only</div>
+  </div>
+  <div class="form-card">
+    <button class="qr-btn" onclick="startQRScan('storage')">📷 Scan QR Code on Box</button>
+    <div class="form-group" style="position:relative;">
+      <label class="form-label">Search Spare Part</label>
+      <input type="text" class="form-input" id="storage-search" placeholder="Type name or code..." oninput="onStorageSearch(this.value)" autocomplete="off">
+      <div class="sdrop" id="storage-drop" style="display:none;"></div>
     </div>
-    <div id="mgr-part-dropdown" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;max-height:150px;overflow-y:auto;margin-top:4px;"></div>
+    <div class="sel-part" id="storage-sel" style="display:none;">
+      <div class="sel-id" id="storage-sel-id"></div>
+      <div class="sel-name" id="storage-sel-name"></div>
+      <div class="sel-info" id="storage-sel-info"></div>
+    </div>
+    <div class="form-group"><label class="form-label">📦 Storage Area Qty</label><input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0"></div>
+    <button class="submit-btn green-btn" onclick="submitStorageQty()">✅ Save Storage Qty</button>
   </div>
+  <div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
 </div>
-<div id="adjust-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"></div>
-<div class="adj-columns">
-  <div class="adj-col">
-    <div class="adj-col-title reduce">📉 Reduce<br><span style="font-size:10px;font-weight:400;">Log fake usage in app</span></div>
-    <input type="text" class="adj-search" id="reduce-search" placeholder="🔍 Search..." oninput="filterAdjColumn('reduce',this.value)">
-    <div class="adj-scroll" id="reduce-list"><div class="loading" style="padding:20px;"><div class="spinner"></div></div></div>
+
+<!-- INVENTORY COUNT -->
+<div class="screen" id="screen-inventory">
+  <div class="cards-grid" id="inv-cards"></div>
+  <div class="search-wrap"><span>🔍</span><input type="text" id="inv-search" placeholder="Search parts..." oninput="filterInventory()"></div>
+  <div class="filter-row">
+    <button class="ftab active" onclick="setInvFilter('all',this)">All</button>
+    <button class="ftab" onclick="setInvFilter('missing',this)">🔴 Missing</button>
+    <button class="ftab" onclick="setInvFilter('extra',this)">🟢 Extra</button>
+    <button class="ftab" onclick="setInvFilter('match',this)">⚪ Match</button>
+    <button class="ftab" onclick="setInvFilter('es400',this)">🛴 ES400</button>
   </div>
-  <div class="adj-col">
-    <div class="adj-col-title usefree">📦 Use Free<br><span style="font-size:10px;font-weight:400;">Used without logging</span></div>
-    <input type="text" class="adj-search" id="usefree-search" placeholder="🔍 Search..." oninput="filterAdjColumn('usefree',this.value)">
-    <div class="adj-scroll" id="usefree-list"><div class="loading" style="padding:20px;"><div class="spinner"></div></div></div>
-  </div>
+  <div id="inv-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+  <div id="inv-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+  <button onclick="loadInventoryScreen()" style="width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:12px;">🔄 Refresh</button>
 </div>
-<button onclick="loadAdjustment()" style="width:100%;padding:12px;background:var(--purple);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:12px;">🔄 Refresh</button>
+
+<!-- ADJUSTMENT -->
+<div class="screen" id="screen-adjustment">
+  <div id="adj-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-<button class="nav-btn active" onclick="nav('home',this)"><span class="icon">🏠</span>Home</button>
-<button class="nav-btn" onclick="nav('stock',this)"><span class="icon">📦</span>Stock</button>
-<button class="nav-btn" onclick="nav('log',this)"><span class="icon">➕</span>Log</button>
-<button class="nav-btn" onclick="nav('history',this)"><span class="icon">📋</span>History</button>
-<button class="nav-btn" onclick="nav('count',this)"><span class="icon">🔢</span>Count</button>
-<button class="nav-btn" id="nav-alerts" onclick="nav('alerts',this)"><span class="icon">🔔</span>Alerts</button>
-<button class="nav-btn" id="nav-adjust" onclick="nav('adjust',this)"><span class="icon">⚖️</span>Adjust</button>
-</nav>
+<nav class="bottom-nav" id="bottom-nav" style="display:none;"></nav>
 
 <script>
-var MANAGER_PIN = '1382';
-var G = { parts:[], movements:[], filter:'all', selected:null, pin:'', userName:'', userRole:'' };
-var G_count=[], G_countParts=[], countFilter='all', laptopCountTab='pending';
-var G_adj={ reduce:[], useFree:[], countName:'' };
-var G_adjSelectedPart=null;
-window.G_closedProgressHTML='';
-window.G_closedSession=null;
+var API_URL='https://script.google.com/macros/s/AKfycbwk5I2607l5MUMqOpDCHLy8IsNI3_syjNm-HJcozuFLN3WBm3DpJkw5M6SNBid8sKYP/exec';
 
-// ── PIN Login ─────────────────────────────────────────────
-function checkPin() {
-  var pin=prompt('Enter your PIN:');
-  if (!pin) return;
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (r.success) {
-        G.pin=pin; G.userName=r.name; G.userRole=r.role;
-        document.getElementById('header-badge').textContent=r.name;
-        if (r.role==='Manager') document.getElementById('adjust-manager-panel').style.display='block';
-        loadData(renderHome);
-      } else {
-        showToast('❌ Invalid PIN','error');
-      }
-    })
-    .verifyPin(pin);
+var S={
+  user:null,parts:[],movements:[],countParts:[],
+  invData:[],invFilter:'all',
+  stockFilter:'all',logSelected:null,storageSelected:null,
+  countSelected:null,overridePending:null,
+  session:{status:'inactive'},storageCount:0,
+  autoRefreshTimer:null,adjRefreshTimer:null,
+  qrActive:false,qrMode:null,qrReader:null,qrStream:null,qrScanLoop:null,
+  countTab:'pending',
+  adjData:{reduce:[],useFree:[],countName:''}
+};
+var adjPendingAction={};
+
+// SESSION
+function saveSession(user){try{localStorage.setItem('sparePartsSession',JSON.stringify({user:user,date:new Date().toDateString()}));}catch(e){}}
+function loadSession(){try{var raw=localStorage.getItem('sparePartsSession');if(!raw)return null;var data=JSON.parse(raw);if(data.date!==new Date().toDateString()){localStorage.removeItem('sparePartsSession');return null;}return data.user;}catch(e){return null;}}
+function clearSession(){try{localStorage.removeItem('sparePartsSession');}catch(e){}}
+
+// API
+function api(params){
+  var url=API_URL+'?'+Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  return fetch(url).then(function(r){return r.json();}).catch(function(e){return{success:false,error:e.message};});
 }
 
-// ── Navigation ────────────────────────────────────────────
-function nav(page,btn) {
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
-  document.getElementById('page-'+page).classList.add('active');
-  btn.classList.add('active');
-  if (page==='home')    renderHome();
-  if (page==='stock')   renderStock();
-  if (page==='history') loadHistory();
-  if (page==='alerts')  renderAlerts();
-  if (page==='count')   loadCountPage();
-  if (page==='log')     initLog();
-  if (page==='adjust')  loadAdjustment();
+// QR SCANNER
+function startQRScan(mode){
+  S.qrMode=mode;
+  document.getElementById('qr-header').textContent=mode==='count'?'📷 Scan Part QR Code':mode==='storage'?'📷 Scan Storage QR Code':'📷 Scan Part QR Code';
+  document.getElementById('qr-status').textContent='Starting camera...';
+  document.getElementById('qr-overlay').classList.add('show');
+  S.qrActive=true;S.qrScanLoop=null;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}})
+  .then(function(stream){
+    S.qrStream=stream;
+    var video=document.getElementById('qr-video');
+    video.srcObject=stream;video.setAttribute('playsinline','true');video.play();
+    video.onloadedmetadata=function(){document.getElementById('qr-status').textContent='🔍 Scanning... hold steady';loadZXingAndScan(video);};
+  })
+  .catch(function(){document.getElementById('qr-status').textContent='❌ Camera blocked. Please allow camera access.';});
+}
+function loadZXingAndScan(video){
+  if(typeof ZXing!=='undefined'){startScanLoop(video);return;}
+  var cdns=['https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js','https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js','https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js'];
+  var tried=0;
+  function tryNext(){if(tried>=cdns.length){showManualInput();return;}var script=document.createElement('script');script.src=cdns[tried++];script.onload=function(){if(!S.qrActive)return;startScanLoop(video);};script.onerror=function(){tryNext();};document.head.appendChild(script);}
+  tryNext();
+}
+function startScanLoop(video){
+  if(!S.qrActive)return;
+  var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  try{
+    var hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    var reader=new ZXing.BrowserMultiFormatReader(hints);S.qrReader=reader;
+    function scanFrame(){if(!S.qrActive)return;if(video.readyState!==video.HAVE_ENOUGH_DATA){S.qrScanLoop=setTimeout(scanFrame,300);return;}canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;ctx.drawImage(video,0,0,canvas.width,canvas.height);try{var result=reader.decodeBitmap(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(canvas))));if(result){var code=result.getText().trim();stopQRScan();handleQRResult(code);return;}}catch(e){}S.qrScanLoop=setTimeout(scanFrame,300);}
+    scanFrame();
+  }catch(e){showManualInput();}
+}
+function stopQRScan(){S.qrActive=false;if(S.qrScanLoop){clearTimeout(S.qrScanLoop);S.qrScanLoop=null;}if(S.qrReader){try{S.qrReader.reset();}catch(e){}S.qrReader=null;}if(S.qrStream){S.qrStream.getTracks().forEach(function(t){t.stop();});S.qrStream=null;}var video=document.getElementById('qr-video');if(video){video.srcObject=null;video.src='';}document.getElementById('qr-overlay').classList.remove('show');document.getElementById('qr-status').textContent='';}
+function showManualInput(){document.getElementById('qr-status').innerHTML='<input type="text" id="manual-qr-input" placeholder="Type item code here..." style="margin-top:8px;padding:10px;border-radius:8px;border:none;font-size:16px;width:260px;text-align:center;" autocomplete="off"><button onclick="submitManualCode()" style="display:block;margin:8px auto 0;padding:10px 30px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Submit</button>';setTimeout(function(){var i=document.getElementById('manual-qr-input');if(i)i.focus();},300);}
+function submitManualCode(){var input=document.getElementById('manual-qr-input');if(!input)return;var code=input.value.trim();if(!code)return;stopQRScan();handleQRResult(code);}
+function handleQRResult(code){
+  if(S.qrMode==='count'){var part=S.countParts.find(function(p){return p.id===code;});if(part){selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);showToast('✅ Found: '+part.name,'success');setTimeout(function(){var q=document.getElementById('count-qty');if(q)q.focus();},300);}else{showToast('❌ Not found: '+code,'error');}}
+  else if(S.qrMode==='storage'){var part=S.parts.find(function(p){return p.id===code;});if(part){selectStoragePart(part.id,part.name,part.storageRemaining||0);showToast('✅ Found: '+part.name,'success');setTimeout(function(){var q=document.getElementById('storage-qty');if(q)q.focus();},300);}else{showToast('❌ Not found: '+code,'error');}}
+  else if(S.qrMode==='log'){var part=S.parts.find(function(p){return p.id===code;});if(part){selectLogPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0);showToast('✅ Found: '+part.name,'success');}else{showToast('❌ Not found: '+code,'error');}}
 }
 
-// ── Clock ─────────────────────────────────────────────────
-function updateClock() {
-  var now=new Date(), h=now.getHours().toString().padStart(2,'0'), m=now.getMinutes().toString().padStart(2,'0');
-  var el=document.getElementById('header-time');
-  if (el) el.textContent='Wolfsburg • '+h+':'+m;
+// LOGIN
+function doLogin(){
+  var pin=document.getElementById('pin-input').value.trim();
+  if(!pin){showPinError('Please enter your PIN');return;}
+  var btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Checking...';
+  document.getElementById('pin-error').textContent='';
+  api({action:'verifyPin',pin:pin}).then(function(r){
+    if(r.success){r.pin=pin;saveSession(r);startApp(r);}
+    else{showPinError('Invalid PIN. Please try again.');document.getElementById('pin-input').value='';}
+    btn.disabled=false;btn.textContent='Login';
+  });
 }
-setInterval(updateClock,1000); updateClock();
-
-// ── Load data ─────────────────────────────────────────────
-function loadData(cb) {
-  google.script.run
-    .withSuccessHandler(function(d){ G.parts=d.parts||[]; G.movements=d.movements||[]; updateBadge(); if(cb) cb(); })
-    .withFailureHandler(function(e){ showToast('Error: '+e.message,'error'); })
-    .getDashboardData();
+function startApp(user){
+  S.user=user;buildNav();
+  loadDashboardData(function(){
+    document.getElementById('screen-login').style.display='none';
+    document.getElementById('bottom-nav').style.display='flex';
+    showScreen('home',document.getElementById('nav-home'));
+    startAutoRefresh();
+  });
 }
-
-function updateBadge() {
-  var low=G.parts.filter(function(p){ return p.storageLow||p.mechanicLow; }).length;
-  var nb=document.getElementById('nav-alerts');
-  nb.innerHTML='<span class="icon">🔔</span>Alerts';
-  if (low>0) nb.innerHTML+='<span class="nav-badge">'+low+'</span>';
-}
-
-function partCard(p) {
-  var low=p.storageLow||p.mechanicLow, sVal=p.storageRemaining||0, mVal=p.mechanicRemaining||0;
-  var sCls=p.storageLow?'low-qty':'storage-qty', mCls=p.mechanicLow?'low-qty':'mechanic-qty';
-  var wurth=p.isWurth?'<span style="background:#c41230;color:white;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;">WÜRTH</span>':'';
-  return '<div class="part-card '+(low?'low':'ok')+'">' +
-    '<div class="part-header"><span class="part-id-tag">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+p.name+'</span>'+wurth+'</div>' +
-    '<div class="part-stocks">' +
-    '<div class="stock-box"><div class="stock-lbl">📦 Storage</div><div class="stock-val '+sCls+'">'+sVal+'</div></div>' +
-    '<div class="stock-box"><div class="stock-lbl">🔧 Mechanic</div><div class="stock-val '+mCls+'">'+mVal+'</div></div>' +
-    '<div class="stock-box"><div class="stock-lbl">📊 Total</div><div class="stock-val total-qty">'+(sVal+mVal)+'</div></div>' +
-    '</div></div>';
+function showPinError(msg){document.getElementById('pin-error').textContent=msg;}
+function logout(){
+  clearSession();S.user=null;S.parts=[];S.movements=[];stopQRScan();
+  if(S.autoRefreshTimer)clearInterval(S.autoRefreshTimer);
+  if(S.adjRefreshTimer)clearInterval(S.adjRefreshTimer);
+  document.getElementById('pin-input').value='';document.getElementById('pin-error').textContent='';
+  document.getElementById('bottom-nav').style.display='none';
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('screen-login').style.display='flex';document.getElementById('screen-login').classList.add('active');
 }
 
-function movCard(m) {
-  var cls='transfer';
-  if (m.type==='Incoming from supplier') cls='incoming';
-  if (m.type==='Sent to other city') cls='sent';
-  if (m.type==='Received from other city') cls='received';
-  return '<div class="mov-card '+cls+'">' +
-    '<div class="mov-top"><span class="mov-type '+cls+'">'+m.type+'</span><span class="mov-qty">×'+m.qty+'</span></div>' +
-    '<div class="mov-name"><span style="color:var(--blue);font-weight:700;">'+(m.itemID||'')+'</span> — '+m.name+'</div>' +
-    '<div class="mov-meta">📅 '+m.date+(m.city?' | 📍 '+m.city:'')+'</div>' +
-    '</div>';
+// AUTO REFRESH
+function startAutoRefresh(){
+  if(S.autoRefreshTimer)clearInterval(S.autoRefreshTimer);
+  S.autoRefreshTimer=setInterval(function(){
+    if(!S.user)return;
+    api({action:'getDashboard',pin:S.user.pin}).then(function(d){
+      if(!d.success)return;S.parts=d.parts||[];S.movements=d.movements||[];S.session=d.session||S.session;
+      var active=document.querySelector('.screen.active');if(!active)return;
+      var name=active.id.replace('screen-','');
+      if(name==='home')renderHome();if(name==='stock')filterStock();if(name==='alerts')renderAlerts();if(name==='history')renderHistory();
+    });
+  },30000);
+}
+function startAdjRefresh(){
+  if(S.adjRefreshTimer)clearInterval(S.adjRefreshTimer);
+  S.adjRefreshTimer=setInterval(function(){
+    if(!S.user||!S.user.permissions.adjustment)return;
+    var active=document.querySelector('.screen.active');if(!active||active.id!=='screen-adjustment')return;
+    api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
+      if(!r.success)return;S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};renderAdjustmentSilently();
+    });
+  },10000);
 }
 
-function card(label,val,color) {
-  return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-value '+color+'">'+val+'</div></div>';
+// BUILD NAV
+function buildNav(){
+  var nav=document.getElementById('bottom-nav'),p=S.user.permissions,r=S.user.role;
+  var html=navBtn('home','🏠','Home',true);
+  if(r==='Manager'||p.count)          html+=navBtn('count',     '🔢','Count', false);
+  if(r==='Manager'||p.adjustment)     html+=navBtn('adjustment','⚖️','Adjust',false);
+  if(r==='Manager'||p.stock)          html+=navBtn('stock',     '📦','Stock', false);
+  if(r==='Manager'||p.log)            html+=navBtn('log',       '➕','Log',   false);
+  if(r==='Manager'||p.history)        html+=navBtn('history',   '📋','History',false);
+  if(r==='Manager'||p.alerts)         html+=navBtn('alerts',    '🔔','Alerts',false);
+  if(r==='Manager'||p.storageOpening) html+=navBtn('storage',   '📥','Storage',false);
+  if(r==='Manager')                   html+=navBtn('inventory', '📊','Inv',   false);
+  nav.innerHTML=html;
+}
+function navBtn(id,icon,label,active){return '<button class="nav-btn'+(active?' active':'')+'" id="nav-'+id+'" onclick="showScreen(\''+id+'\',this)"><span class="icon">'+icon+'</span>'+label+'</button>';}
+
+// SHOW SCREEN
+function showScreen(name,btn){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('screen-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='home')renderHome();if(name==='count')loadCountScreen();if(name==='stock')renderStock();
+  if(name==='log')initLog();if(name==='history')renderHistory();if(name==='alerts')renderAlerts();
+  if(name==='storage')initStorageScreen();if(name==='inventory')loadInventoryScreen();
+  if(name==='adjustment')loadAdjustmentScreen();
 }
 
-// ── HOME ──────────────────────────────────────────────────
-function renderHome() {
-  if (G.parts.length===0) { loadData(renderHome); return; }
-  var low=G.parts.filter(function(p){ return p.storageLow||p.mechanicLow; }).length;
-  var total=G.parts.length;
-  var todayUse=G.parts.reduce(function(s,p){ return s+(p.todayUsed||0); },0);
-  var inStorage=G.parts.filter(function(p){ return (p.storageRemaining||0)>0; }).length;
-  var html='<div class="cards-grid">';
-  html+=card('Total Parts',total,'blue'); html+=card('Low Stock',low,'red');
-  html+=card('Used Today',todayUse,'orange'); html+=card('In Storage',inStorage,'green');
-  html+='</div>';
+// LOAD DATA
+function loadDashboardData(cb){
+  api({action:'getDashboard',pin:S.user.pin}).then(function(r){
+    if(r.success){S.parts=r.parts||[];S.movements=r.movements||[];S.session=r.session||{status:'inactive'};}
+    if(cb)cb();
+  });
+}
+
+// HOME
+function renderHome(){
+  var low=S.parts.filter(function(p){return p.storageLow||p.mechanicLow;}).length;
+  var total=S.parts.length,todayUse=S.parts.reduce(function(s,p){return s+(p.todayUsed||0);},0);
+  var inStorage=S.parts.filter(function(p){return(p.storageRemaining||0)>0;}).length;
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'+
+    '<div><div style="font-size:18px;font-weight:700;">Welcome, '+S.user.name+' 👋</div>'+
+    '<div style="font-size:13px;color:var(--muted);">'+S.user.role+' <span class="live-badge">● LIVE</span></div></div>'+
+    '<button style="background:rgba(0,0,0,0.08);border:none;color:var(--text);padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;" onclick="logout()">Logout</button></div>';
+  html+='<div class="cards-grid">';
+  html+=statCard('Total Parts',total,'blue');html+=statCard('Low Stock',low,'red');
+  html+=statCard('Used Today',todayUse,'orange');html+=statCard('In Storage',inStorage,'green');
+  html+='</div>';html+=sessionStatusHTML();
+  if(S.user.role==='Manager')html+=managerButtons();
   html+='<div class="section-title">📋 Recent Movements</div>';
-  if (G.movements.length>0) { G.movements.slice(0,5).forEach(function(m){ html+=movCard(m); }); }
-  else { html+='<div class="empty"><div class="empty-icon">📋</div>No movements yet</div>'; }
-  var lowParts=G.parts.filter(function(p){ return p.storageLow||p.mechanicLow; });
-  if (lowParts.length>0) {
-    html+='<div class="section-title">⚠️ Low Stock ('+lowParts.length+')</div>';
-    lowParts.slice(0,3).forEach(function(p){ html+=partCard(p); });
-    if (lowParts.length>3) html+='<div style="text-align:center;padding:8px;color:var(--blue);font-size:13px;cursor:pointer;" onclick="nav(\'alerts\',document.getElementById(\'nav-alerts\'))">View all '+lowParts.length+' alerts →</div>';
-  }
+  if(S.movements.length>0){S.movements.slice(0,5).forEach(function(m){html+=movCard(m);});}
+  else{html+='<div class="empty"><div class="empty-icon">📋</div>No movements yet</div>';}
   document.getElementById('home-content').innerHTML=html;
 }
+function statCard(label,val,color){return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-value '+color+'">'+val+'</div></div>';}
+function sessionStatusHTML(){
+  var s=S.session;
+  var cls=s.status==='active'?'active':s.status==='locked'?'locked':s.status==='approved'?'approved':s.status==='closed'?'closed':'inactive';
+  var msg=s.status==='active'?'✅ Count session is OPEN':s.status==='locked'?'🔒 Count session is LOCKED':s.status==='approved'?'✔️ Count APPROVED':s.status==='closed'?'🔐 Count CLOSED':'⏸️ No active count session';
+  return '<div class="session-status '+cls+'">'+msg+(s.countName?' — '+s.countName:'')+'</div>';
+}
+function managerButtons(){
+  var s=S.session;var html='<div class="mgr-btn-row">';
+  if(s.status==='inactive'||s.status==='closed')html+='<button class="mgr-btn start" onclick="managerStartCount()">▶️ Start Count</button>';
+  if(s.status==='active')html+='<button class="mgr-btn lock" onclick="managerLockCount()">🔒 Lock Count</button>';
+  if(s.status==='locked'){html+='<button class="mgr-btn unlock" onclick="managerUnlockCount()">🔓 Unlock</button><button class="mgr-btn approve" onclick="managerApproveCount()">✅ Approve</button>';}
+  if(s.status==='approved')html+='<button class="mgr-btn close" onclick="managerCloseCount()">🔐 Close Permanent</button>';
+  return html+'</div>';
+}
+function managerStartCount(){var name=prompt('Enter count name:');if(name===null)return;if(!name.trim())name='Count '+new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'});api({action:'startCount',pin:S.user.pin,countName:name.trim()}).then(function(r){if(r.success){S.session={status:'active',countName:name.trim()};showToast('✅ Count started!','success');renderHome();}else{showToast('❌ '+r.error,'error');}});}
+function managerLockCount(){if(!confirm('Lock the count session?'))return;api({action:'lockCount',pin:S.user.pin}).then(function(r){if(r.success){S.session.status='locked';showToast('🔒 Count locked!','success');renderHome();}else{showToast('❌ '+r.error,'error');}});}
+function managerUnlockCount(){api({action:'unlockCount',pin:S.user.pin}).then(function(r){if(r.success){S.session.status='active';showToast('🔓 Count unlocked!','success');renderHome();}else{showToast('❌ '+r.error,'error');}});}
+function managerApproveCount(){if(!confirm('Approve count?\n\n✅ Adds Correction column\n✅ Saves to Correction History\n⚠️ Cannot be undone!'))return;showToast('⏳ Approving... please wait','');api({action:'approveCount',pin:S.user.pin}).then(function(r){if(r.success){S.session.status='approved';showToast('✅ Count approved! Corrected: '+r.corrected+' parts','success');renderHome();}else{showToast('❌ '+r.error,'error');}});}
+function managerCloseCount(){if(!confirm('Permanently close this count?\n\nThis cannot be undone!'))return;api({action:'closeCount',pin:S.user.pin}).then(function(r){if(r.success){S.session.status='closed';showToast('🔐 Count permanently closed!','success');renderHome();}else{showToast('❌ '+r.error,'error');}});}
 
-// ── STOCK ─────────────────────────────────────────────────
-function renderStock() { if (G.parts.length===0) { loadData(renderStock); return; } filterStock(); }
-
-function filterStock() {
-  var q=(document.getElementById('stock-search').value||'').toLowerCase(), filter=G.filter;
-  var list=G.parts.filter(function(p){
-    var matchQ=!q||p.name.toLowerCase().indexOf(q)!==-1||p.id.toLowerCase().indexOf(q)!==-1;
-    var matchF=filter==='all'||(filter==='low'&&(p.storageLow||p.mechanicLow))||(filter==='storage'&&(p.storageRemaining||0)>0)||(filter==='mechanic'&&(p.mechanicRemaining||0)>0);
+// INVENTORY COUNT
+function loadInventoryScreen(){
+  document.getElementById('inv-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
+  document.getElementById('inv-cards').innerHTML='';
+  api({action:'getInventoryCount',pin:S.user.pin}).then(function(r){
+    if(!r.success){showToast('❌ '+r.error,'error');return;}
+    S.invData=r.data||[];renderInventoryCards();filterInventory();
+  });
+}
+function renderInventoryCards(){
+  var missing=S.invData.filter(function(r){return r.diff<0;}).length;
+  var extra=S.invData.filter(function(r){return r.diff>0;}).length;
+  var match=S.invData.filter(function(r){return r.diff===0;}).length;
+  document.getElementById('inv-cards').innerHTML=statCard('Total',S.invData.length,'blue')+statCard('Missing 🔴',missing,'red')+statCard('Extra 🟢',extra,'green')+statCard('Match ⚪',match,'orange');
+}
+function filterInventory(){
+  var q=(document.getElementById('inv-search').value||'').toLowerCase(),filter=S.invFilter;
+  var list=S.invData.filter(function(r){
+    var matchQ=!q||r.name.toLowerCase().indexOf(q)!==-1||r.id.toLowerCase().indexOf(q)!==-1;
+    var matchF=filter==='all'||(filter==='missing'&&r.diff<0)||(filter==='extra'&&r.diff>0)||(filter==='match'&&r.diff===0)||(filter==='es400'&&r.isES400);
     return matchQ&&matchF;
   });
-  document.getElementById('stock-count').textContent=list.length+' parts';
-  if (list.length===0) { document.getElementById('stock-content').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>'; return; }
-  document.getElementById('stock-content').innerHTML=list.map(partCard).join('');
+  document.getElementById('inv-info').textContent=list.length+' parts shown';
+  if(list.length===0){document.getElementById('inv-content').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>';return;}
+  document.getElementById('inv-content').innerHTML=list.map(function(r){
+    var diffColor=r.diff<0?'#c62828':r.diff>0?'#1b5e20':'#666';
+    var diffBg=r.diff<0?'#fce8e6':r.diff>0?'#e8f5e9':'#f5f5f5';
+    var diffText=r.diff>0?'+'+r.diff:r.diff;
+    var wurth=r.isWurth?'<span style="background:#c41230;color:white;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;">WÜRTH</span>':'';
+    return '<div class="inv-card" style="border-left:4px solid '+(r.diff<0?'var(--red)':r.diff>0?'var(--green)':'var(--border)')+'">'+
+      '<div class="part-header" style="margin-bottom:10px;"><span class="part-id">'+r.id+'</span><span class="part-sep"> — </span><span class="part-name">'+r.name+'</span>'+wurth+'</div>'+
+      '<div class="part-stocks">'+
+        '<div class="stock-box"><div class="stock-lbl">📦 Physical</div><div class="inv-physical">'+r.physical+'</div></div>'+
+        '<div class="stock-box"><div class="stock-lbl">💻 Admin</div><div class="inv-admin">'+r.admin+'</div></div>'+
+        '<div class="stock-box"><div class="stock-lbl">Difference</div><div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div></div>'+
+      '</div></div>';
+  }).join('');
+}
+function setInvFilter(f,btn){S.invFilter=f;document.querySelectorAll('#screen-inventory .ftab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');filterInventory();}
+
+// ADJUSTMENT SCREEN
+function loadAdjustmentScreen(){
+  document.getElementById('adj-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
+  api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
+    if(!r.success){document.getElementById('adj-content').innerHTML='<div class="empty"><div class="empty-icon">❌</div>'+r.error+'</div>';return;}
+    S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};
+    // Sort by abs remaining descending
+    S.adjData.reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+    S.adjData.useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+    renderAdjustment();startAdjRefresh();
+  });
 }
 
-function setStockFilter(f,btn) {
-  G.filter=f;
-  document.querySelectorAll('#page-stock .ftab').forEach(function(t){ t.classList.remove('active'); });
-  btn.classList.add('active'); filterStock();
+function renderAdjustment(){
+  var data=S.adjData;
+  var html='';
+  if(data.countName){html+='<div class="adj-count-info"><div class="adj-count-name">'+data.countName+'</div><div class="adj-count-sub">Make adjustments to match Physical vs Admin</div></div>';}
+  html+='<div class="adj-live-badge">● LIVE — updates every 10 seconds</div>';
+
+  // Manager override panel
+  if(S.user.role==='Manager'){
+    html+='<div class="mgr-override-box">'+
+      '<div class="mgr-override-title">⚙️ Manager Override — Set remaining directly</div>'+
+      '<div class="mgr-override-row">'+
+        '<input type="text" class="mgr-override-input" id="mgr-part-input" placeholder="Search part..." oninput="filterMgrSearch(this.value)" autocomplete="off">'+
+        '<input type="number" class="mgr-override-qty" id="mgr-qty-input" placeholder="Qty">'+
+        '<button onclick="applyManagerOverride()" style="padding:8px 12px;background:var(--orange);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Set</button>'+
+      '</div>'+
+      '<div id="mgr-drop" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;max-height:150px;overflow-y:auto;margin-top:4px;"></div>'+
+    '</div>';
+  }
+
+  if(data.reduce.length===0&&data.useFree.length===0){
+    html+='<div class="empty"><div class="empty-icon">✅</div>No adjustments needed!<br><small style="color:var(--muted);">All quantities match.</small></div>';
+    document.getElementById('adj-content').innerHTML=html;return;
+  }
+
+  html+='<div class="adj-columns">';
+
+  // LEFT — Reduce
+  html+='<div class="adj-col">';
+  html+='<div class="adj-col-header reduce">📉 Reduce<br><small style="font-weight:400;">Log in Charger</small><br>('+data.reduce.length+')</div>';
+  html+='<input type="text" class="adj-search" id="adj-reduce-search" placeholder="🔍 Search..." oninput="filterAdjList(\'reduce\',this.value)">';
+  html+='<div class="adj-col-list" id="adj-reduce-list">';
+  if(data.reduce.length===0){html+='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">✅ All done!</div>';}
+  else{data.reduce.forEach(function(item){html+=adjCard(item,'reduce',item.remaining===0);});}
+  html+='</div></div>';
+
+  // RIGHT — Use Free
+  html+='<div class="adj-col">';
+  html+='<div class="adj-col-header usefree">📦 Use Free<br><small style="font-weight:400;">No logging needed</small><br>('+data.useFree.length+')</div>';
+  html+='<input type="text" class="adj-search" id="adj-usefree-search" placeholder="🔍 Search..." oninput="filterAdjList(\'usefree\',this.value)">';
+  html+='<div class="adj-col-list" id="adj-usefree-list">';
+  if(data.useFree.length===0){html+='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">✅ All done!</div>';}
+  else{data.useFree.forEach(function(item){html+=adjCard(item,'usefree',item.remaining===0);});}
+  html+='</div></div>';
+
+  html+='</div>';
+  document.getElementById('adj-content').innerHTML=html;
 }
 
-// ── LOG ───────────────────────────────────────────────────
-function initLog() {
-  if (G.parts.length===0) loadData(function(){});
-  var today=new Date();
-  document.getElementById('mov-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+function adjCard(item,remClass,done){
+  var absOrig=Math.abs(item.origDiff);
+  var absRem=Math.abs(item.remaining);
+  var wurth=item.isWurth?'<span style="background:#c41230;color:white;font-size:9px;font-weight:800;padding:1px 3px;border-radius:2px;margin-left:2px;">W</span>':'';
+  return '<div class="adj-card '+remClass+(done?' done':'')+'" id="adj-card-'+item.id+'">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:2px;">'+item.name+wurth+'</div>'+
+    '<div style="font-size:10px;color:var(--blue);font-weight:700;margin-bottom:6px;">'+item.id+'</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">'+
+      '<div style="text-align:center;min-width:36px;">'+
+        '<div class="adj-remaining '+remClass+'" id="adj-rem-'+item.id+'">'+absRem+'</div>'+
+        '<div style="font-size:10px;color:var(--muted);">of '+absOrig+'</div>'+
+      '</div>'+
+      (done?
+        '<span style="font-size:20px;">✅</span>':
+        '<div style="display:flex;gap:3px;align-items:center;">'+
+          '<button class="adj-btn adjust" onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'adjust\')">Adjust</button>'+
+          '<button class="adj-btn undo"   onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'undo\')">↩</button>'+
+        '</div>'
+      )+
+    '</div>'+
+    '<div class="adj-confirm" id="adj-confirm-'+item.id+'">'+
+      '<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px;" id="adj-confirm-label-'+item.id+'">How many?</div>'+
+      '<div class="adj-qty-row">'+
+        '<button class="adj-btn undo" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\', -1)">−</button>'+
+        '<input class="adj-qty-input" id="adj-qty-'+item.id+'" type="number" value="1" min="1">'+
+        '<button class="adj-btn adjust" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\',1)">+</button>'+
+        '<button class="adj-save-btn" id="adj-save-'+item.id+'" onclick="saveConfirm(\''+item.id+'\',\''+item.type+'\')">Save</button>'+
+        '<button class="adj-cancel-btn" onclick="cancelConfirm(\''+item.id+'\')">✕</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--muted);margin-top:4px;" id="adj-upd-'+item.id+'">'+(item.updatedBy&&item.updatedBy!=='System'?'👤 '+item.updatedBy:'')+'</div>'+
+  '</div>';
 }
 
-function onTypeChange() {
-  var t=document.getElementById('mov-type').value;
-  document.getElementById('city-group').style.display=(t==='Sent to other city'||t==='Received from other city')?'block':'none';
-}
-
-function onPartSearch(q) {
-  var drop=document.getElementById('search-drop');
-  if (!q||q.length<2) { drop.style.display='none'; return; }
+function filterAdjList(type,q){
+  var listId=type==='reduce'?'adj-reduce-list':'adj-usefree-list';
+  var list=type==='reduce'?S.adjData.reduce:S.adjData.useFree;
+  var el=document.getElementById(listId);
+  if(!el)return;
   var ql=q.toLowerCase();
-  var matches=G.parts.filter(function(p){ return p.name.toLowerCase().indexOf(ql)!==-1||p.id.toLowerCase().indexOf(ql)!==-1; }).slice(0,8);
-  if (matches.length===0) { drop.style.display='none'; return; }
-  drop.innerHTML=matches.map(function(p){
-    return '<div class="sdrop-item" onclick="selectPart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+(p.storageRemaining||0)+','+(p.mechanicRemaining||0)+')">'+
-      '<div class="sdrop-name"><span style="color:var(--blue);font-weight:700;">'+p.id+'</span> — '+p.name+'</div>'+
-      '<div class="sdrop-meta">📦 Storage: '+(p.storageRemaining||0)+' | 🔧 Mechanic: '+(p.mechanicRemaining||0)+'</div></div>';
-  }).join('');
-  drop.style.display='block';
+  var filtered=!ql?list:list.filter(function(x){return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1;});
+  if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No parts found</div>';return;}
+  el.innerHTML=filtered.map(function(item){return adjCard(item,type,item.remaining===0);}).join('');
 }
 
-function selectPart(id,name,storage,mechanic) {
-  G.selected={id:id,name:name,storage:storage,mechanic:mechanic};
-  document.getElementById('part-search').value=id+' — '+name;
-  document.getElementById('search-drop').style.display='none';
-  document.getElementById('sel-part').style.display='block';
-  document.getElementById('sel-name').textContent=name;
-  document.getElementById('sel-code').textContent='Item Code: '+id;
-  document.getElementById('sel-stock').textContent='📦 Storage: '+storage+' 🔧 Mechanic: '+mechanic;
+function openConfirm(itemCode,type,action){
+  document.querySelectorAll('.adj-confirm.show').forEach(function(el){el.classList.remove('show');});
+  adjPendingAction[itemCode]={type:type,action:action};
+  var confirmEl=document.getElementById('adj-confirm-'+itemCode);
+  var qtyEl=document.getElementById('adj-qty-'+itemCode);
+  var saveBtn=document.getElementById('adj-save-'+itemCode);
+  var labelEl=document.getElementById('adj-confirm-label-'+itemCode);
+  if(!confirmEl)return;
+  if(qtyEl)qtyEl.value=1;
+  if(labelEl)labelEl.textContent=action==='undo'?'Undo how many?':'How many to adjust?';
+  if(saveBtn){saveBtn.textContent=action==='undo'?'↩ Undo':'✓ Save';saveBtn.style.background=action==='undo'?'#b45309':'var(--green)';}
+  confirmEl.classList.add('show');
+}
+function changeConfirmQty(itemCode,delta){var qtyEl=document.getElementById('adj-qty-'+itemCode);if(!qtyEl)return;qtyEl.value=Math.max(1,(parseInt(qtyEl.value)||1)+delta);}
+function cancelConfirm(itemCode){var confirmEl=document.getElementById('adj-confirm-'+itemCode);if(confirmEl)confirmEl.classList.remove('show');delete adjPendingAction[itemCode];}
+function saveConfirm(itemCode,type){
+  var pending=adjPendingAction[itemCode];if(!pending)return;
+  var qtyEl=document.getElementById('adj-qty-'+itemCode);
+  var qty=Math.max(1,parseInt(qtyEl?qtyEl.value:1)||1);
+  var isUndo=pending.action==='undo';
+  cancelConfirm(itemCode);
+  api({action:'updateAdjustment',pin:S.user.pin,itemCode:itemCode,changeQty:qty,isUndo:isUndo?'true':'false',managerOverride:'false'})
+  .then(function(r){
+    if(!r.success){showToast('❌ '+r.error,'error');return;}
+    updateAdjCardUI(itemCode,type,r.remaining,r.updatedBy);
+    showToast(isUndo?'↩ Undone '+qty+'!':'✅ Saved '+qty+'!','success');
+  });
 }
 
-function startQRScan() {
-  var code=prompt('📷 Enter Item Code from QR scan:');
-  if (!code) return;
-  code=code.trim();
-  var part=G.parts.find(function(p){ return p.id===code; });
-  if (part) { selectPart(part.id,part.name,part.storageRemaining||0,part.mechanicRemaining||0); showToast('✅ Part found!','success'); }
-  else { showToast('❌ Item Code not found: '+code,'error'); }
+function updateAdjCardUI(itemCode,type,remaining,updatedBy){
+  var remEl=document.getElementById('adj-rem-'+itemCode);
+  var updEl=document.getElementById('adj-upd-'+itemCode);
+  var card=document.getElementById('adj-card-'+itemCode);
+  if(remEl)remEl.textContent=Math.abs(remaining);
+  if(updEl&&updatedBy&&updatedBy!=='System')updEl.textContent='👤 '+updatedBy;
+  var allItems=S.adjData.reduce.concat(S.adjData.useFree);
+  var item=allItems.find(function(i){return i.id===itemCode;});
+  if(item)item.remaining=remaining;
+  var remClass=type==='Reduce'?'reduce':'usefree';
+  if(remaining===0){if(remEl)remEl.className='adj-remaining done';if(card)card.classList.add('done');}
+  else{if(remEl)remEl.className='adj-remaining '+remClass;if(card)card.classList.remove('done');}
 }
 
-function submitMovement() {
-  if (!G.selected) { showToast('Please select a spare part','error'); return; }
-  var date=document.getElementById('mov-date').value, type=document.getElementById('mov-type').value;
-  var qty=parseInt(document.getElementById('mov-qty').value), city=document.getElementById('mov-city').value, note=document.getElementById('mov-notes').value;
-  if (!date) { showToast('Please select a date','error'); return; }
-  if (!type) { showToast('Please select movement type','error'); return; }
-  if (!qty||qty<=0) { showToast('Please enter a valid quantity','error'); return; }
-  var btn=document.getElementById('submit-btn'); btn.disabled=true; btn.textContent='Submitting...';
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (r.success) {
-        showToast('✅ Movement logged!','success');
-        G.selected=null; G.parts=[]; G.movements=[];
-        document.getElementById('part-search').value='';
-        document.getElementById('sel-part').style.display='none';
-        document.getElementById('mov-type').value=''; document.getElementById('mov-qty').value='';
-        document.getElementById('mov-city').value=''; document.getElementById('mov-notes').value='';
-        document.getElementById('city-group').style.display='none';
-        loadData(function(){});
-      } else { showToast('❌ '+r.error,'error'); }
-      btn.disabled=false; btn.textContent='Submit Movement';
-    })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); btn.disabled=false; btn.textContent='Submit Movement'; })
-    .logMovement({date:date,itemID:G.selected.id,name:G.selected.name,type:type,qty:qty,city:city,notes:note});
+function renderAdjustmentSilently(){
+  var allItems=S.adjData.reduce.concat(S.adjData.useFree);
+  allItems.forEach(function(item){
+    var remEl=document.getElementById('adj-rem-'+item.id);
+    var updEl=document.getElementById('adj-upd-'+item.id);
+    var card=document.getElementById('adj-card-'+item.id);
+    if(!remEl)return;
+    remEl.textContent=Math.abs(item.remaining);
+    if(updEl&&item.updatedBy&&item.updatedBy!=='System')updEl.textContent='👤 '+item.updatedBy;
+    if(item.remaining===0){remEl.className='adj-remaining done';if(card)card.classList.add('done');}
+  });
 }
 
-// ── HISTORY ───────────────────────────────────────────────
-function loadHistory() { if (G.movements.length===0) { loadData(function(){ filterHistory(); }); } else { filterHistory(); } }
-
-function filterHistory() {
-  var q=(document.getElementById('hist-search').value||'').toLowerCase();
-  var list=G.movements.filter(function(m){ return !q||m.name.toLowerCase().indexOf(q)!==-1||m.type.toLowerCase().indexOf(q)!==-1||m.date.indexOf(q)!==-1; });
-  if (list.length===0) { document.getElementById('hist-content').innerHTML='<div class="empty"><div class="empty-icon">📋</div>No movements found</div>'; return; }
-  document.getElementById('hist-content').innerHTML=list.map(movCard).join('');
-}
-
-// ── ALERTS ────────────────────────────────────────────────
-function renderAlerts() {
-  if (G.parts.length===0) { loadData(renderAlerts); return; }
-  var low=G.parts.filter(function(p){ return p.storageLow||p.mechanicLow; });
-  if (low.length===0) { document.getElementById('alerts-content').innerHTML='<div class="empty"><div class="empty-icon">✅</div>All stock levels are good!</div>'; return; }
-  var html='<div class="section-title">⚠️ '+low.length+' parts need attention</div>';
-  html+=low.map(function(p){
-    return '<div class="alert-card">' +
-      '<div class="alert-title"><span style="color:var(--blue);font-weight:700;">'+p.id+'</span> — '+p.name+'</div>' +
-      (p.storageLow?'<div class="alert-row"><span>📦 Storage Remaining</span><span class="alert-val">'+p.storageRemaining+' (min: '+p.minStorage+')</span></div>':'')+
-      (p.mechanicLow?'<div class="alert-row"><span>🔧 Mechanic Remaining</span><span class="alert-val">'+p.mechanicRemaining+' (min: '+p.minMechanic+')</span></div>':'')+
-      '</div>';
-  }).join('');
-  document.getElementById('alerts-content').innerHTML=html;
-}
-
-// ── ADJUSTMENT ────────────────────────────────────────────
-function loadAdjustment() {
-  if (!G.pin) { checkPin(); return; }
-  document.getElementById('reduce-list').innerHTML='<div class="loading" style="padding:20px;"><div class="spinner"></div></div>';
-  document.getElementById('usefree-list').innerHTML='<div class="loading" style="padding:20px;"><div class="spinner"></div></div>';
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (!r.success) { showToast('❌ '+r.error,'error'); return; }
-      G_adj.reduce=r.reduce||[];
-      G_adj.useFree=r.useFree||[];
-      G_adj.countName=r.countName||'';
-      document.getElementById('adjust-count-name').textContent='📋 '+G_adj.countName;
-      // Sort by abs remaining descending
-      G_adj.reduce.sort(function(a,b){ return Math.abs(b.remaining)-Math.abs(a.remaining); });
-      G_adj.useFree.sort(function(a,b){ return Math.abs(b.remaining)-Math.abs(a.remaining); });
-      // Stats
-      var totalReduce=G_adj.reduce.length, totalFree=G_adj.useFree.length;
-      var doneReduce=G_adj.reduce.filter(function(x){ return x.remaining===0; }).length;
-      var doneFree=G_adj.useFree.filter(function(x){ return x.remaining===0; }).length;
-      document.getElementById('adjust-stats').innerHTML=
-        '<div class="stat-card"><div class="stat-label">📉 Reduce</div><div class="stat-value red">'+totalReduce+'</div><div style="font-size:11px;color:var(--green);">'+doneReduce+' resolved</div></div>'+
-        '<div class="stat-card"><div class="stat-label">📦 Use Free</div><div class="stat-value green">'+totalFree+'</div><div style="font-size:11px;color:var(--green);">'+doneFree+' resolved</div></div>';
-      renderAdjColumn('reduce','');
-      renderAdjColumn('usefree','');
-    })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); })
-    .getAdjustmentData(G.pin);
-}
-
-function renderAdjColumn(type, filter) {
-  var list=type==='reduce'?G_adj.reduce:G_adj.useFree;
-  var q=filter.toLowerCase();
-  if (q) list=list.filter(function(x){ return x.name.toLowerCase().indexOf(q)!==-1||x.id.toLowerCase().indexOf(q)!==-1; });
-  var el=document.getElementById(type==='-reduce'?'reduce-list':'usefree-list');
-  el=document.getElementById(type==='reduce'?'reduce-list':'usefree-list');
-  if (list.length===0) { el.innerHTML='<div class="empty" style="padding:20px;font-size:13px;">No parts</div>'; return; }
-  el.innerHTML=list.map(function(item){
-    var remCls=item.remaining===0?'zero':(type==='reduce'?'negative':'positive');
-    var cardCls=type==='reduce'?'reduce-card':'usefree-card';
-    var wurth=item.isWurth?'<span style="background:#c41230;color:white;font-size:9px;font-weight:800;padding:1px 4px;border-radius:3px;margin-left:3px;">WÜRTH</span>':'';
-    return '<div class="adj-card '+cardCls+'" id="adjcard-'+item.id+'">' +
-      '<div class="adj-name">'+item.name+wurth+'</div>' +
-      '<div class="adj-code">'+item.id+'</div>' +
-      '<div class="adj-diff-row">' +
-        '<span class="adj-diff-label">Remaining: </span>' +
-        '<span class="adj-remaining '+remCls+'">'+item.remaining+'</span>' +
-      '</div>' +
-      (item.remaining===0
-        ? '<div class="adj-resolved">✅ Resolved</div>'
-        : '<div class="adj-btn-row">' +
-            '<button class="adj-adjust-btn" onclick="showAdjInput(\''+item.id+'\',\''+type+'\')">Adjust</button>' +
-            '<button class="adj-undo-btn" onclick="doUndo(\''+item.id+'\',\''+type+'\')">↩ Undo</button>' +
-          '</div>' +
-          '<div class="adj-input-row" id="adjinput-'+item.id+'" style="display:none;">' +
-            '<input type="number" class="adj-qty-input" id="adjqty-'+item.id+'" placeholder="Qty" min="1">' +
-            '<button class="adj-save-btn" onclick="doAdjust(\''+item.id+'\',\''+type+'\')">Save</button>' +
-            '<button class="adj-cancel-btn" onclick="hideAdjInput(\''+item.id+'\')">✕</button>' +
-          '</div>'
-      ) +
-      '</div>';
-  }).join('');
-}
-
-function filterAdjColumn(type, q) {
-  renderAdjColumn(type, q);
-}
-
-function showAdjInput(id, type) {
-  // Hide all other inputs first
-  document.querySelectorAll('[id^="adjinput-"]').forEach(function(el){ el.style.display='none'; });
-  document.getElementById('adjinput-'+id).style.display='flex';
-  document.getElementById('adjqty-'+id).focus();
-}
-
-function hideAdjInput(id) {
-  document.getElementById('adjinput-'+id).style.display='none';
-  document.getElementById('adjqty-'+id).value='';
-}
-
-function doAdjust(id, type) {
-  var qty=parseFloat(document.getElementById('adjqty-'+id).value)||0;
-  if (qty<=0) { showToast('Enter a valid quantity','error'); return; }
-  hideAdjInput(id);
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (r.success) {
-        showToast('✅ Adjusted!','success');
-        // Update local data
-        var list=type==='reduce'?G_adj.reduce:G_adj.useFree;
-        var item=list.find(function(x){ return x.id===id; });
-        if (item) item.remaining=r.remaining;
-        renderAdjColumn(type, type==='reduce'?(document.getElementById('reduce-search').value||''):(document.getElementById('usefree-search').value||''));
-      } else { showToast('❌ '+r.error,'error'); }
-    })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); })
-    .updateAdjustment(G.pin, id, qty, false, false);
-}
-
-function doUndo(id, type) {
-  var list=type==='reduce'?G_adj.reduce:G_adj.useFree;
-  var item=list.find(function(x){ return x.id===id; });
-  if (!item) return;
-  var origDiff=item.origDiff||0;
-  var current=item.remaining||0;
-  // How much was adjusted = origDiff - current (for reduce) or origDiff - current (for usefree)
-  var adjusted=Math.abs(origDiff)-Math.abs(current);
-  if (adjusted<=0) { showToast('Nothing to undo','error'); return; }
-  var undoQty=Math.min(adjusted, 1); // undo last 1 by default — can change
-  if (!confirm('Undo last adjustment for '+item.name+'?')) return;
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (r.success) {
-        showToast('↩ Undone!','success');
-        item.remaining=r.remaining;
-        renderAdjColumn(type, type==='reduce'?(document.getElementById('reduce-search').value||''):(document.getElementById('usefree-search').value||''));
-      } else { showToast('❌ '+r.error,'error'); }
-    })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); })
-    .updateAdjustment(G.pin, id, undoQty, true, false);
-}
-
-// Manager Override
-var G_mgrSelectedPart=null;
-function filterMgrSearch(q) {
-  var drop=document.getElementById('mgr-part-dropdown');
-  if (!q||q.length<2) { drop.style.display='none'; return; }
+// Manager override
+var G_mgrPart=null;
+function filterMgrSearch(q){
+  var drop=document.getElementById('mgr-drop');
+  if(!q||q.length<2){drop.style.display='none';G_mgrPart=null;return;}
   var ql=q.toLowerCase();
-  var allParts=G_adj.reduce.concat(G_adj.useFree);
-  var matches=allParts.filter(function(x){ return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1; }).slice(0,6);
-  if (matches.length===0) { drop.style.display='none'; return; }
+  var allParts=S.adjData.reduce.concat(S.adjData.useFree);
+  var matches=allParts.filter(function(x){return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1;}).slice(0,6);
+  if(matches.length===0){drop.style.display='none';return;}
   drop.innerHTML=matches.map(function(x){
-    return '<div style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f5f5f5;font-size:12px;" onclick="selectMgrPart(\''+x.id+'\',\''+x.name.replace(/'/g,"\\'")+'\')">'+
+    return '<div style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f5f5f5;font-size:12px;" onclick="selectMgrPart(\''+x.id+'\',\''+x.name.replace(/'/g,"\\'")+'\',' +x.remaining+')">'+
       '<span style="color:var(--blue);font-weight:700;">'+x.id+'</span> — '+x.name+'<br>'+
       '<span style="color:var(--muted);">Remaining: '+x.remaining+'</span></div>';
   }).join('');
   drop.style.display='block';
 }
-
-function selectMgrPart(id,name) {
-  G_mgrSelectedPart=id;
-  document.getElementById('mgr-part-search').value=id+' — '+name;
-  document.getElementById('mgr-part-dropdown').style.display='none';
+function selectMgrPart(id,name,remaining){
+  G_mgrPart={id:id,name:name,remaining:remaining};
+  document.getElementById('mgr-part-input').value=id+' — '+name;
+  document.getElementById('mgr-drop').style.display='none';
 }
-
-function applyManagerOverride() {
-  if (!G_mgrSelectedPart) { showToast('Select a part first','error'); return; }
-  var qty=parseFloat(document.getElementById('mgr-override-qty').value);
-  if (isNaN(qty)) { showToast('Enter a valid quantity','error'); return; }
-  if (!confirm('Set remaining to '+qty+' for '+G_mgrSelectedPart+'?')) return;
-  google.script.run
-    .withSuccessHandler(function(r){
-      if (r.success) {
-        showToast('✅ Override applied!','success');
-        // Update in both lists
-        var allLists=[G_adj.reduce,G_adj.useFree];
-        allLists.forEach(function(list){
-          var item=list.find(function(x){ return x.id===G_mgrSelectedPart; });
-          if (item) item.remaining=r.remaining;
-        });
-        renderAdjColumn('reduce',''); renderAdjColumn('usefree','');
-        G_mgrSelectedPart=null;
-        document.getElementById('mgr-part-search').value='';
-        document.getElementById('mgr-override-qty').value='';
-      } else { showToast('❌ '+r.error,'error'); }
-    })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); })
-    .updateAdjustment(G.pin, G_mgrSelectedPart, qty, false, true);
-}
-
-// ── COUNT PAGE ────────────────────────────────────────────
-function loadCountPage() {
-  document.getElementById('count-session-area').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
-  document.getElementById('count-progress-wrap').innerHTML='';
-  window.G_closedProgressHTML='';
-  window.G_closedSession=null;
-  google.script.run
-    .withSuccessHandler(function(session){
-      window.G_closedSession=session;
-      renderSessionArea(session);
-      if (session.status!=='inactive') {
-        google.script.run
-          .withSuccessHandler(function(partsRes){
-            G_countParts=partsRes.success?partsRes.parts:[];
-            google.script.run
-              .withSuccessHandler(function(progress){
-                if (session.status==='closed') {
-                  window.G_closedProgressHTML=buildProgressHTML(progress);
-                  document.getElementById('count-progress-wrap').innerHTML='';
-                } else {
-                  renderMechanicProgress(progress);
-                }
-              })
-              .getCountProgress();
-          })
-          .getPartsForCount();
-      }
-      google.script.run
-        .withSuccessHandler(function(data){ G_count=data; renderInventoryComparison(); })
-        .getInventoryCountData();
-    })
-    .getCountSessionStatus();
-}
-
-function refreshCount() { loadCountPage(); }
-
-function renderSessionArea(session) {
-  var status=session.status||'inactive', countName=session.countName||'', html='';
-  var statusMsg={inactive:'⏸️ No active count session',active:'✅ Count Session is OPEN',locked:'🔒 Count Session is LOCKED',approved:'✅ Count Session is APPROVED',closed:'🔒 Count Session is PERMANENTLY CLOSED'};
-  html+='<div class="session-badge '+status+'">'+(statusMsg[status]||status)+'</div>';
-  if (countName&&status!=='closed'&&status!=='inactive') html+='<div class="count-name-badge">📋 '+countName+'</div>';
-  html+='<div class="mgr-btn-row">';
-  if (status==='inactive') html+='<button class="mgr-btn start" onclick="managerStartCount()">▶️ Start New Count</button>';
-  if (status==='active') html+='<button class="mgr-btn lock" onclick="managerLockCount()">🔒 Lock Count</button>';
-  if (status==='locked') {
-    html+='<button class="mgr-btn unlock" onclick="managerUnlockCount()">🔓 Unlock</button>';
-    html+='<button class="mgr-btn start" onclick="managerStartCount()">🔄 New Count</button>';
-    html+='<button class="mgr-btn approve" onclick="managerApproveCount()">✅ Approve Count</button>';
-  }
-  if (status==='approved') {
-    html+='<button class="mgr-btn start" onclick="managerStartCount()">🔄 New Count</button>';
-    html+='<button class="mgr-btn close" onclick="managerCloseCount()">🔒 Close Permanent</button>';
-  }
-  html+='</div>';
-  if (status==='locked') html+='<div class="info-box blue"><div class="info-box-title">✅ Ready to Approve?</div>Approving will add Correction column and save to Correction History. Opening Stock will NOT change.</div>';
-  if (status==='approved') html+='<div class="info-box green"><div class="info-box-title">✅ Count Approved!</div>Correction added to Daily Stock Summary. Click "Close Permanent" to lock.</div>';
-  if (status==='closed') {
-    html+='<div style="margin-bottom:12px;"><button onclick="toggleCountHistory()" style="width:100%;padding:12px 16px;background:#e8f0fe;border:1px solid var(--blue);border-radius:8px;color:var(--blue);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center;"><span>📋 '+countName+'</span><span id="history-arrow">▼ View history</span></button>'+
-      '<div id="count-history-detail" style="display:none;background:#f9f0ff;border:1px solid var(--purple);border-top:none;border-radius:0 0 8px 8px;padding:16px;">'+
-      '<div style="font-size:12px;color:#555;line-height:2.2;margin-bottom:16px;border-bottom:1px solid #e0d0f0;padding-bottom:12px;">'+
-      (session.startedAt?'▶️ Started: <strong>'+session.startedAt+'</strong><br>':'')+
-      (session.lockedAt?'🔒 Locked: <strong>'+session.lockedAt+'</strong><br>':'')+
-      (session.approvedAt?'✅ Approved: <strong>'+session.approvedAt+'</strong><br>':'')+
-      (session.closedAt?'🔒 Closed: <strong>'+session.closedAt+'</strong>':'')+
-      '</div><div id="closed-progress-area"><div style="text-align:center;padding:20px;color:var(--muted);">Loading...</div></div></div></div>';
-    html+='<button class="mgr-btn start" onclick="managerStartCount()" style="width:100%;margin-bottom:12px;">▶️ Start New Count</button>';
-  }
-  var el=document.getElementById('count-session-area');
-  el.innerHTML=html; el.setAttribute('data-status',status);
-}
-
-function toggleCountHistory() {
-  var detail=document.getElementById('count-history-detail'), arrow=document.getElementById('history-arrow');
-  if (!detail) return;
-  if (detail.style.display==='none') {
-    detail.style.display='block'; arrow.textContent='▲ Hide details';
-    var progressArea=document.getElementById('closed-progress-area');
-    if (progressArea) {
-      if (window.G_closedProgressHTML) progressArea.innerHTML=window.G_closedProgressHTML;
-      else { setTimeout(function(){ var pa=document.getElementById('closed-progress-area'); if (pa&&window.G_closedProgressHTML) pa.innerHTML=window.G_closedProgressHTML; },2000); }
-    }
-  } else { detail.style.display='none'; arrow.textContent='▼ View history'; }
-}
-
-function buildProgressHTML(progress) {
-  if (!progress||!progress.success) return '<div class="empty"><div class="empty-icon">📋</div>No count data.</div>';
-  var pct=progress.percentage||0, counted=progress.countedParts||0, total=progress.totalParts||0, pending=total-counted;
-  var html='<div style="background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;">'+
-    '<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:14px;font-weight:600;">🔢 Count Result</span><span style="font-size:14px;font-weight:700;color:var(--blue);">'+pct+'%</span></div>'+
-    '<div style="height:10px;background:#e0e0e0;border-radius:5px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:var(--green);border-radius:5px;width:'+pct+'%;"></div></div>'+
-    '<div style="font-size:12px;color:var(--muted);">'+counted+' of '+total+' parts counted</div></div>';
-  var entries=progress.entries||[], pendingList=G_countParts.filter(function(p){ return !p.counted; });
-  html+='<div class="count-tabs"><button class="count-tab active" id="closed-tab-p" onclick="switchClosedTab(\'pending\')">⬜ Pending ('+pendingList.length+')</button><button class="count-tab" id="closed-tab-c" onclick="switchClosedTab(\'counted\')">✅ Counted ('+counted+')</button></div>';
-  html+='<div id="closed-pending-list">';
-  if (pendingList.length===0) html+='<div class="empty" style="padding:20px;"><div class="empty-icon" style="font-size:36px;">🎉</div>All parts counted!</div>';
-  else pendingList.forEach(function(p){ html+='<div class="pending-card"><div class="part-header" style="flex:1;"><span class="part-id-tag">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+p.name+'</span></div></div>'; });
-  html+='</div><div id="closed-counted-list" style="display:none;">';
-  if (entries.length===0) html+='<div class="empty" style="padding:20px;">No parts counted.</div>';
-  else entries.forEach(function(e){ html+='<div class="mcount-card"><div class="mcount-top"><div class="part-header"><span class="part-id-tag">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+e.name+'</span></div><div class="mcount-qty">'+e.actualCount+'</div></div><div class="mcount-who"><div style="color:var(--green);font-weight:600;">'+e.countedBy+'</div><div>'+e.countedAt+'</div></div></div>'; });
-  html+='</div>';
-  return html;
-}
-
-function switchClosedTab(tab) {
-  var p=document.getElementById('closed-pending-list'), c=document.getElementById('closed-counted-list');
-  var btnP=document.getElementById('closed-tab-p'), btnC=document.getElementById('closed-tab-c');
-  if (p) p.style.display=tab==='pending'?'block':'none';
-  if (c) c.style.display=tab==='counted'?'block':'none';
-  if (btnP) btnP.className='count-tab '+(tab==='pending'?'active':'');
-  if (btnC) btnC.className='count-tab '+(tab==='counted'?'green-active':'');
-}
-
-function renderMechanicProgress(progress) {
-  if (!progress||!progress.success) return;
-  var pct=progress.percentage||0, counted=progress.countedParts||0, total=progress.totalParts||0, pending=total-counted;
-  var html='<div style="background:white;border-radius:var(--radius);padding:16px;margin-bottom:12px;">'+
-    '<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="font-size:14px;font-weight:600;">🔢 Mechanic Count Progress</span><span style="font-size:14px;font-weight:700;color:var(--blue);">'+pct+'%</span></div>'+
-    '<div style="height:10px;background:#e0e0e0;border-radius:5px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;background:var(--green);border-radius:5px;width:'+pct+'%;transition:width 0.5s;"></div></div>'+
-    '<div style="font-size:12px;color:var(--muted);">'+counted+' of '+total+' counted — '+pending+' remaining</div></div>';
-  var entries=progress.entries||[], pendingList=G_countParts.filter(function(p){ return !p.counted; });
-  html+='<div class="count-tabs"><button class="count-tab '+(laptopCountTab!=='counted'?'active':'')+'" id="lt-tab-pending" onclick="switchLaptopTab(\'pending\')">⬜ Pending ('+pendingList.length+')</button><button class="count-tab '+(laptopCountTab==='counted'?'green-active':'')+'" id="lt-tab-counted" onclick="switchLaptopTab(\'counted\')">✅ Counted ('+counted+')</button></div>';
-  html+='<div id="lt-pending-list" style="display:'+(laptopCountTab!=='counted'?'block':'none')+'">';
-  if (pendingList.length===0) html+='<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>';
-  else {
-    html+='<div class="search-wrap"><span>🔍</span><input type="text" placeholder="Search pending..." oninput="filterLtPending(this.value)" style="border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent;"></div>';
-    html+='<div id="lt-pending-items">';
-    pendingList.forEach(function(p){ html+='<div class="pending-card"><div class="part-header" style="flex:1;"><span class="part-id-tag">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+p.name+'</span></div><span style="font-size:11px;color:var(--muted);background:#f5f5f5;padding:3px 8px;border-radius:8px;margin-left:8px;">Not counted</span></div>'; });
-    html+='</div>';
-  }
-  html+='</div><div id="lt-counted-list" style="display:'+(laptopCountTab==='counted'?'block':'none')+'">';
-  if (entries.length===0) html+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.</div>';
-  else {
-    html+='<div class="search-wrap"><span>🔍</span><input type="text" placeholder="Search counted..." oninput="filterLtCounted(this.value)" style="border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent;"></div>';
-    html+='<div id="lt-counted-items">';
-    entries.forEach(function(e){ html+='<div class="mcount-card"><div class="mcount-top"><div class="part-header"><span class="part-id-tag">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+e.name+'</span></div><div class="mcount-qty">'+e.actualCount+'</div></div><div class="mcount-who"><div style="color:var(--green);font-weight:600;">'+e.countedBy+'</div><div>'+e.countedAt+'</div>'+(e.lastEditedBy?'<div style="color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+' </div></div>'; });
-    html+='</div>';
-  }
-  html+='</div>';
-  document.getElementById('count-progress-wrap').innerHTML=html;
-}
-
-function switchLaptopTab(tab) {
-  laptopCountTab=tab;
-  var pending=document.getElementById('lt-pending-list'), counted=document.getElementById('lt-counted-list');
-  var btnP=document.getElementById('lt-tab-pending'), btnC=document.getElementById('lt-tab-counted');
-  if (pending) pending.style.display=tab==='pending'?'block':'none';
-  if (counted) counted.style.display=tab==='counted'?'block':'none';
-  if (btnP) btnP.className='count-tab '+(tab==='pending'?'active':'');
-  if (btnC) btnC.className='count-tab '+(tab==='counted'?'green-active':'');
-}
-
-function filterLtPending(q) {
-  var items=document.getElementById('lt-pending-items'); if (!items) return;
-  q=q.toLowerCase();
-  items.querySelectorAll('.pending-card').forEach(function(c){ c.style.display=(!q||c.textContent.toLowerCase().indexOf(q)!==-1)?'flex':'none'; });
-}
-
-function filterLtCounted(q) {
-  var items=document.getElementById('lt-counted-items'); if (!items) return;
-  q=q.toLowerCase();
-  items.querySelectorAll('.mcount-card').forEach(function(c){ c.style.display=(!q||c.textContent.toLowerCase().indexOf(q)!==-1)?'block':'none'; });
-}
-
-function managerStartCount() {
-  var name=prompt('Enter count name:','August Inventory Count');
-  if (!name) return;
-  if (!confirm('Start new count: "'+name+'"?\nThis will clear all previous count data.')) return;
-  google.script.run
-    .withSuccessHandler(function(r){ if (r.success){ showToast('✅ '+r.message,'success'); loadCountPage(); } else { showToast('❌ '+r.error,'error'); } })
-    .startCountSession(MANAGER_PIN,name);
-}
-
-function managerLockCount() {
-  if (!confirm('Lock the count session?')) return;
-  google.script.run
-    .withSuccessHandler(function(r){ if (r.success){ showToast('🔒 Count locked!','success'); loadCountPage(); } else { showToast('❌ '+r.error,'error'); } })
-    .lockCountSession(MANAGER_PIN);
-}
-
-function managerUnlockCount() {
-  if (!confirm('Unlock the count session?')) return;
-  google.script.run
-    .withSuccessHandler(function(r){ if (r.success){ showToast('🔓 Count unlocked!','success'); loadCountPage(); } else { showToast('❌ '+r.error,'error'); } })
-    .unlockCountSession(MANAGER_PIN);
-}
-
-function managerApproveCount() {
-  if (!confirm('Approve count?\n\n✅ Adds Correction column\n✅ Saves to Correction History\n⚠️ Cannot be undone!')) return;
-  showToast('⏳ Approving... please wait','');
-  google.script.run
-    .withSuccessHandler(function(r){ if (r.success){ showToast('✅ Count approved! '+r.corrected+' parts corrected','success'); loadCountPage(); } else { showToast('❌ '+r.error,'error'); } })
-    .withFailureHandler(function(e){ showToast('❌ '+e.message,'error'); })
-    .approveMechanicCountWithCorrection(MANAGER_PIN);
-}
-
-function managerCloseCount() {
-  if (!confirm('Close this count PERMANENTLY?\n⚠️ Cannot be undone!')) return;
-  google.script.run
-    .withSuccessHandler(function(r){ if (r.success){ showToast('🔒 Count permanently closed!','success'); loadCountPage(); } else { showToast('❌ '+r.error,'error'); } })
-    .closeCountPermanently(MANAGER_PIN);
-}
-
-function renderInventoryComparison() {
-  if (G_count.length===0) {
-    document.getElementById('count-filters-wrap').style.display='none';
-    document.getElementById('count-cards').innerHTML='';
-    document.getElementById('count-content').innerHTML='<div class="empty"><div class="empty-icon">📊</div>No inventory comparison data.</div>';
-    return;
-  }
-  document.getElementById('count-filters-wrap').style.display='block';
-  var missing=G_count.filter(function(r){ return r.diff<0; }).length;
-  var extra  =G_count.filter(function(r){ return r.diff>0; }).length;
-  var match  =G_count.filter(function(r){ return r.diff===0; }).length;
-  document.getElementById('count-cards').innerHTML=
-    card('Total Parts',G_count.length,'blue')+card('Missing 🔴',missing,'red')+
-    card('Extra 🟢',extra,'green')+card('Match ⚪',match,'orange');
-  filterCount();
-}
-
-function filterCount() {
-  var q=(document.getElementById('count-search').value||'').toLowerCase();
-  var list=G_count.filter(function(r){
-    var matchQ=!q||r.name.toLowerCase().indexOf(q)!==-1||r.id.toLowerCase().indexOf(q)!==-1;
-    var matchF=countFilter==='all'||(countFilter==='missing'&&r.diff<0)||(countFilter==='extra'&&r.diff>0)||(countFilter==='match'&&r.diff===0)||(countFilter==='es400'&&r.isES400);
-    return matchQ&&matchF;
+function applyManagerOverride(){
+  if(!G_mgrPart){showToast('Select a part first','error');return;}
+  var qty=parseFloat(document.getElementById('mgr-qty-input').value);
+  if(isNaN(qty)){showToast('Enter a valid quantity','error');return;}
+  if(!confirm('Set remaining to '+qty+' for '+G_mgrPart.id+'?'))return;
+  var partId=G_mgrPart.id;
+  api({action:'updateAdjustment',pin:S.user.pin,itemCode:partId,changeQty:qty,isUndo:'false',managerOverride:'true'})
+  .then(function(r){
+    if(!r.success){showToast('❌ '+r.error,'error');return;}
+    showToast('✅ Override applied!','success');
+    // Find type
+    var reduceItem=S.adjData.reduce.find(function(x){return x.id===partId;});
+    var type=reduceItem?'Reduce':'Use Free';
+    updateAdjCardUI(partId,type,r.remaining,r.updatedBy);
+    G_mgrPart=null;
+    document.getElementById('mgr-part-input').value='';
+    document.getElementById('mgr-qty-input').value='';
   });
-  document.getElementById('count-info').textContent=list.length+' parts shown';
-  if (list.length===0) { document.getElementById('count-content').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>'; return; }
-  document.getElementById('count-content').innerHTML=list.map(function(r){
-    var diffColor=r.diff<0?'#c62828':r.diff>0?'#1b5e20':'#666';
-    var diffBg   =r.diff<0?'#fce8e6':r.diff>0?'#e8f5e9':'#f5f5f5';
-    var diffText =r.diff>0?'+'+r.diff:r.diff;
-    var wurth=r.isWurth?'<span style="background:#c41230;color:white;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;">WÜRTH</span>':'';
-    return '<div class="part-card" style="border-left-color:'+(r.diff<0?'var(--red)':r.diff>0?'var(--green)':'var(--border)')+'">' +
-      '<div class="part-header"><span class="part-id-tag">'+r.id+'</span><span class="part-sep"> — </span><span class="part-name-tag">'+r.name+'</span>'+wurth+'</div>' +
-      '<div class="part-stocks">' +
-      '<div class="stock-box"><div class="stock-lbl">📦 Physical</div><div class="count-physical">'+r.physical+'</div></div>' +
-      '<div class="stock-box"><div class="stock-lbl">💻 Admin</div><div class="count-admin">'+r.admin+'</div></div>' +
-      '<div class="stock-box"><div class="stock-lbl">Difference</div><div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div></div>' +
-      '</div></div>';
-  }).join('');
 }
 
-function setCountFilter(f,btn) {
-  countFilter=f;
-  document.querySelectorAll('#page-count .ftab').forEach(function(t){ t.classList.remove('active'); });
-  btn.classList.add('active'); filterCount();
+// COUNT SCREEN
+function loadCountScreen(){
+  document.getElementById('count-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
+  api({action:'getCountScreen',pin:S.user.pin}).then(function(r){
+    if(!r.success){document.getElementById('count-content').innerHTML='<div class="empty"><div class="empty-icon">❌</div>'+r.error+'</div>';return;}
+    S.countParts=r.parts||[];S.session=r.session||S.session;renderCountScreen(r);
+  });
+}
+function renderCountScreen(data){
+  var s=S.session;var html='';
+  html+=sessionStatusHTML();if(S.user.role==='Manager')html+=managerButtons();
+  if(s.status!=='inactive'&&s.status!=='closed'&&data.totalParts>0){
+    var pct=data.percentage||0,counted=data.countedParts||0,total=data.totalParts||0;
+    html+='<div class="progress-wrap"><div class="progress-top"><span class="progress-label">Count Progress</span><span class="progress-pct" id="prog-pct">'+pct+'%</span></div><div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:'+pct+'%"></div></div><div style="font-size:12px;color:var(--muted);margin-top:6px;" id="prog-text">'+counted+' of '+total+' parts counted — '+(total-counted)+' remaining</div></div>';
+  }
+  if(s.status==='inactive'||s.status==='closed'){if(S.user.role!=='Manager')html+='<div class="empty"><div class="empty-icon">⏸️</div>No active count session.<br>Ask manager to start.</div>';document.getElementById('count-content').innerHTML=html;return;}
+  if(s.status==='active'){
+    html+='<div class="form-card" id="count-form-card">'+
+      '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>'+
+      '<button class="qr-btn" onclick="startQRScan(\'count\')">📷 Scan QR Code</button>'+
+      '<div class="form-group" style="position:relative;"><label class="form-label">Or Search Part</label><input type="text" class="form-input" id="count-search-input" placeholder="Type name or code..." oninput="onCountSearch(this.value)" autocomplete="off"><div class="sdrop" id="count-drop" style="display:none;"></div></div>'+
+      '<div class="sel-part" id="count-sel" style="display:none;"><div class="sel-id" id="count-sel-id"></div><div class="sel-name" id="count-sel-name"></div><div class="sel-info" id="count-sel-info"></div></div>'+
+      '<div class="form-group"><label class="form-label">Actual Count</label><input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0"></div>'+
+      '<button class="submit-btn green-btn" onclick="submitCountEntry()">✅ Save Count</button>'+
+      '</div>';
+  }
+  var entries=data.entries||[],pendingParts=S.countParts.filter(function(p){return !p.counted;});
+  html+='<div class="count-tabs"><button class="count-tab '+(S.countTab==='pending'?'active':'')+'" onclick="switchCountTab(\'pending\')">⬜ Pending ('+pendingParts.length+')</button><button class="count-tab green-tab '+(S.countTab==='counted'?'active':'')+'" onclick="switchCountTab(\'counted\')">✅ Counted ('+entries.length+')</button></div>';
+  html+='<div id="count-pending-list" style="display:'+(S.countTab==='pending'?'block':'none')+'">';
+  if(pendingParts.length===0){html+='<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>';}
+  else{
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="pending-search" placeholder="Search pending..." oninput="filterPendingList()"></div>';
+    html+='<div id="pending-list-items">';
+    pendingParts.forEach(function(p){html+='<div class="count-card" style="border-left:4px solid #e0e0e0;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="part-header" style="margin-bottom:0;flex:1;"><span class="part-id">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name">'+p.name+'</span></div><button class="count-now-btn" onclick="selectAndCount(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\')" >Count →</button></div></div>';});
+    html+='</div>';
+  }
+  html+='</div>';
+  html+='<div id="count-counted-list" style="display:'+(S.countTab==='counted'?'block':'none')+'">';
+  if(entries.length===0){html+='<div class="empty"><div class="empty-icon">📋</div>No parts counted yet.</div>';}
+  else{
+    html+='<div class="search-wrap" style="margin-bottom:12px;"><span>🔍</span><input type="text" id="counted-search" placeholder="Search counted..." oninput="filterCountedList()"></div>';
+    html+='<div id="counted-list-items">';
+    entries.forEach(function(e){html+='<div class="count-card counted"><div class="part-header"><span class="part-id">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name">'+e.name+'</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><div class="count-qty-show">'+e.actualCount+'</div><div style="text-align:right;"><div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div><div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+(e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+' </div></div></div>';});
+    html+='</div>';
+  }
+  html+='</div>';
+  document.getElementById('count-content').innerHTML=html;
+}
+function switchCountTab(tab){S.countTab=tab;var pending=document.getElementById('count-pending-list'),counted=document.getElementById('count-counted-list'),tabs=document.querySelectorAll('.count-tab');if(pending)pending.style.display=tab==='pending'?'block':'none';if(counted)counted.style.display=tab==='counted'?'block':'none';tabs.forEach(function(t,i){t.classList.remove('active');if((i===0&&tab==='pending')||(i===1&&tab==='counted'))t.classList.add('active');});}
+function filterPendingList(){var q=(document.getElementById('pending-search').value||'').toLowerCase();var items=document.getElementById('pending-list-items');if(!items)return;items.querySelectorAll('.count-card').forEach(function(c){c.style.display=(!q||c.textContent.toLowerCase().indexOf(q)!==-1)?'block':'none';});}
+function filterCountedList(){var q=(document.getElementById('counted-search').value||'').toLowerCase();var items=document.getElementById('counted-list-items');if(!items)return;items.querySelectorAll('.count-card').forEach(function(c){c.style.display=(!q||c.textContent.toLowerCase().indexOf(q)!==-1)?'block':'none';});}
+function selectAndCount(id,name){var part=S.countParts.find(function(p){return p.id===id;});if(part)selectCountPart(part.id,part.name,part.counted,part.countedBy,part.actualCount);var formCard=document.getElementById('count-form-card');if(formCard)formCard.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(function(){var q=document.getElementById('count-qty');if(q)q.focus();},400);}
+function onCountSearch(q){var drop=document.getElementById('count-drop');if(!q||q.length<2){drop.style.display='none';return;}var ql=q.toLowerCase();var matches=S.countParts.filter(function(p){return p.name.toLowerCase().indexOf(ql)!==-1||p.id.toLowerCase().indexOf(ql)!==-1;}).slice(0,8);if(matches.length===0){drop.style.display='none';return;}drop.innerHTML=matches.map(function(p){return '<div class="sdrop-item" onclick="selectCountPart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+p.counted+',\''+p.countedBy+'\','+JSON.stringify(p.actualCount)+')"><div class="sdrop-id">'+p.id+'</div><div class="sdrop-name">'+p.name+'</div><div class="sdrop-meta">'+(p.counted?'✅ Counted by '+p.countedBy+' — qty: '+p.actualCount:'⬜ Not counted yet')+'</div></div>';}).join('');drop.style.display='block';}
+function selectCountPart(id,name,counted,countedBy,actualCount){S.countSelected={id:id,name:name,counted:counted,countedBy:countedBy,actualCount:actualCount};var inp=document.getElementById('count-search-input'),drop=document.getElementById('count-drop'),sel=document.getElementById('count-sel'),selId=document.getElementById('count-sel-id'),selName=document.getElementById('count-sel-name'),selInfo=document.getElementById('count-sel-info'),qty=document.getElementById('count-qty');if(inp)inp.value=id+' — '+name;if(drop)drop.style.display='none';if(sel)sel.style.display='block';if(selId)selId.textContent=id;if(selName)selName.textContent=name;if(selInfo)selInfo.textContent=counted?'✅ Already counted by '+countedBy+' — qty: '+actualCount:'⬜ Not counted yet';if(qty)qty.value=counted?actualCount:'';}
+function submitCountEntry(){
+  if(!S.countSelected){showToast('Please select a part first','error');return;}
+  var qty=document.getElementById('count-qty').value;
+  if(qty===''||qty===null){showToast('Please enter actual count','error');return;}
+  qty=parseInt(qty);if(isNaN(qty)||qty<0){showToast('Please enter a valid number','error');return;}
+  if(S.countSelected.counted&&S.countSelected.countedBy!==S.user.name){S.overridePending={itemCode:S.countSelected.id,qty:qty};document.getElementById('override-text').innerHTML='This part was already counted by <strong>'+S.countSelected.countedBy+'</strong> with qty <strong>'+S.countSelected.actualCount+'</strong>.<br><br>Do you want to override with your count of <strong>'+qty+'</strong>?';document.getElementById('override-modal').classList.add('show');return;}
+  saveCount(S.countSelected.id,qty);
+}
+function closeOverrideModal(){document.getElementById('override-modal').classList.remove('show');S.overridePending=null;}
+function confirmOverride(){document.getElementById('override-modal').classList.remove('show');if(S.overridePending){saveCount(S.overridePending.itemCode,S.overridePending.qty);S.overridePending=null;}}
+function saveCount(itemCode,qty){
+  var savedCode=itemCode,savedQty=qty;S.countSelected=null;
+  var inp=document.getElementById('count-search-input'),sel=document.getElementById('count-sel'),qtyEl=document.getElementById('count-qty'),drop=document.getElementById('count-drop');
+  if(inp)inp.value='';if(sel)sel.style.display='none';if(qtyEl)qtyEl.value='';if(drop)drop.style.display='none';
+  showToast('✅ Count saved! Next part...','success');if(inp)inp.focus();
+  var localPart=S.countParts.find(function(p){return p.id===savedCode;});if(localPart){localPart.counted=true;localPart.actualCount=savedQty;localPart.countedBy=S.user.name;}
+  api({action:'submitCount',pin:S.user.pin,itemCode:savedCode,actualCount:savedQty}).then(function(r){
+    if(!r.success){showToast('❌ Failed: '+r.error,'error');return;}
+    api({action:'getCountScreen',pin:S.user.pin}).then(function(data){
+      if(!data.success)return;
+      var countedParts=data.countedParts||0,totalParts=data.totalParts||0;
+      var pct=totalParts>0?Math.round((countedParts/totalParts)*100):0;
+      var bar=document.getElementById('prog-fill'),pctEl=document.getElementById('prog-pct'),txt=document.getElementById('prog-text');
+      if(bar)bar.style.width=pct+'%';if(pctEl)pctEl.textContent=pct+'%';if(txt)txt.textContent=countedParts+' of '+totalParts+' parts counted — '+(totalParts-countedParts)+' remaining';
+      refreshCountLists(data);
+    });
+  });
+}
+function refreshCountLists(data){
+  var countedParts=data.entries||[],pendingParts=S.countParts.filter(function(p){return !p.counted;});
+  var tabs=document.querySelectorAll('.count-tab');
+  if(tabs[0])tabs[0].textContent='⬜ Pending ('+pendingParts.length+')';if(tabs[1])tabs[1].textContent='✅ Counted ('+countedParts.length+')';
+  var pendingItems=document.getElementById('pending-list-items');
+  if(pendingItems){var html='';pendingParts.forEach(function(p){html+='<div class="count-card" style="border-left:4px solid #e0e0e0;"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="part-header" style="margin-bottom:0;flex:1;"><span class="part-id">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name">'+p.name+'</span></div><button class="count-now-btn" onclick="selectAndCount(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\')">Count →</button></div></div>';});pendingItems.innerHTML=pendingParts.length>0?html:'<div class="empty"><div class="empty-icon">🎉</div>All parts counted!</div>';}
+  var countedItems=document.getElementById('counted-list-items');
+  if(countedItems){var html='';countedParts.forEach(function(e){html+='<div class="count-card counted"><div class="part-header"><span class="part-id">'+e.id+'</span><span class="part-sep"> — </span><span class="part-name">'+e.name+'</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><div class="count-qty-show">'+e.actualCount+'</div><div style="text-align:right;"><div style="font-size:12px;color:var(--green);font-weight:600;">'+e.countedBy+'</div><div style="font-size:11px;color:var(--muted);">'+e.countedAt+'</div>'+(e.lastEditedBy?'<div style="font-size:10px;color:var(--orange);">Edited: '+e.lastEditedBy+'</div>':'')+' </div></div></div>';});countedItems.innerHTML=html;}
 }
 
-// ── TOAST ─────────────────────────────────────────────────
-function showToast(msg,type) {
-  var t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast '+(type||''); t.style.display='block';
-  setTimeout(function(){ t.style.display='none'; },3000);
+// STORAGE
+function initStorageScreen(){S.storageSelected=null;S.storageCount=0;document.getElementById('storage-search').value='';document.getElementById('storage-sel').style.display='none';document.getElementById('storage-qty').value='';document.getElementById('storage-drop').style.display='none';document.getElementById('storage-progress').textContent='';}
+function onStorageSearch(q){var drop=document.getElementById('storage-drop');if(!q||q.length<2){drop.style.display='none';return;}var ql=q.toLowerCase();var matches=S.parts.filter(function(p){return p.name.toLowerCase().indexOf(ql)!==-1||p.id.toLowerCase().indexOf(ql)!==-1;}).slice(0,8);if(matches.length===0){drop.style.display='none';return;}drop.innerHTML=matches.map(function(p){return '<div class="sdrop-item" onclick="selectStoragePart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+(p.storageRemaining||0)+')"><div class="sdrop-id">'+p.id+'</div><div class="sdrop-name">'+p.name+'</div><div class="sdrop-meta">📦 Current Storage: '+(p.storageRemaining||0)+'</div></div>';}).join('');drop.style.display='block';}
+function selectStoragePart(id,name,currentQty){S.storageSelected={id:id,name:name,currentQty:currentQty};document.getElementById('storage-search').value=id+' — '+name;document.getElementById('storage-drop').style.display='none';document.getElementById('storage-sel').style.display='block';document.getElementById('storage-sel-id').textContent=id;document.getElementById('storage-sel-name').textContent=name;document.getElementById('storage-sel-info').textContent='📦 Storage Area';document.getElementById('storage-qty').value='';document.getElementById('storage-qty').focus();}
+function submitStorageQty(){
+  if(!S.storageSelected){showToast('Please select a spare part','error');return;}
+  var qty=document.getElementById('storage-qty').value;if(qty===''||qty===null){showToast('Please enter quantity','error');return;}
+  qty=parseInt(qty);if(isNaN(qty)||qty<0){showToast('Please enter a valid number','error');return;}
+  var savedId=S.storageSelected.id,savedName=S.storageSelected.name;S.storageCount++;S.storageSelected=null;
+  document.getElementById('storage-search').value='';document.getElementById('storage-sel').style.display='none';document.getElementById('storage-qty').value='';document.getElementById('storage-drop').style.display='none';
+  document.getElementById('storage-progress').textContent=S.storageCount+' parts updated this session';showToast('✅ Saved! Next part...','success');document.getElementById('storage-search').focus();
+  api({action:'updateStorageQty',pin:S.user.pin,itemCode:savedId,storageQty:qty}).then(function(r){if(!r.success)showToast('❌ Failed: '+savedName+': '+r.error,'error');var part=S.parts.find(function(p){return p.id===savedId;});if(part)part.storageRemaining=qty;});
 }
 
-// ── INIT ──────────────────────────────────────────────────
-window.onload=function(){
-  checkPin();
-  setInterval(function(){
-    if (!G.pin) return;
-    google.script.run
-      .withSuccessHandler(function(d){
-        G.parts=d.parts||[]; G.movements=d.movements||[]; updateBadge();
-        var ap=document.querySelector('.page.active').id.replace('page-','');
-        if (ap==='home') renderHome();
-        if (ap==='stock') filterStock();
-        if (ap==='alerts') renderAlerts();
-        if (ap==='history') filterHistory();
-      })
-      .getDashboardData();
-  },30000);
-};
+// STOCK
+function renderStock(){filterStock();}
+function filterStock(){
+  var q=(document.getElementById('stock-search').value||'').toLowerCase();
+  var list=S.parts.filter(function(p){var matchQ=!q||p.name.toLowerCase().indexOf(q)!==-1||p.id.toLowerCase().indexOf(q)!==-1;var matchF=S.stockFilter==='all'||(S.stockFilter==='low'&&(p.storageLow||p.mechanicLow))||(S.stockFilter==='storage'&&(p.storageRemaining||0)>0)||(S.stockFilter==='mechanic'&&(p.mechanicRemaining||0)>0);return matchQ&&matchF;});
+  document.getElementById('stock-count').textContent=list.length+' parts';
+  if(list.length===0){document.getElementById('stock-content').innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No parts found</div>';return;}
+  document.getElementById('stock-content').innerHTML=list.map(partCard).join('');
+}
+function setStockFilter(f,btn){S.stockFilter=f;document.querySelectorAll('#screen-stock .ftab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');filterStock();}
+function partCard(p){
+  var low=p.storageLow||p.mechanicLow,sVal=p.storageRemaining||0,mVal=p.mechanicRemaining||0;
+  var sCls=p.storageLow?'low-qty':'storage-qty',mCls=p.mechanicLow?'low-qty':'mechanic-qty';
+  var wurth=p.isWurth?'<span style="background:#c41230;color:white;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;">WÜRTH</span>':'';
+  return '<div class="part-card '+(low?'low':'ok')+'"><div class="part-header"><span class="part-id">'+p.id+'</span><span class="part-sep"> — </span><span class="part-name">'+p.name+'</span>'+wurth+'</div><div class="part-stocks"><div class="stock-box"><div class="stock-lbl">📦 Storage</div><div class="stock-val '+sCls+'">'+sVal+'</div></div><div class="stock-box"><div class="stock-lbl">🔧 Mechanic</div><div class="stock-val '+mCls+'">'+mVal+'</div></div><div class="stock-box"><div class="stock-lbl">📊 Total</div><div class="stock-val total-qty">'+(sVal+mVal)+'</div></div></div></div>';
+}
 
+// LOG
+function initLog(){var today=new Date();document.getElementById('log-date').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');}
+function onLogTypeChange(){var t=document.getElementById('log-type').value;document.getElementById('log-city-group').style.display=(t==='Sent to other city'||t==='Received from other city')?'block':'none';}
+function onLogSearch(q){var drop=document.getElementById('log-drop');if(!q||q.length<2){drop.style.display='none';return;}var ql=q.toLowerCase();var matches=S.parts.filter(function(p){return p.name.toLowerCase().indexOf(ql)!==-1||p.id.toLowerCase().indexOf(ql)!==-1;}).slice(0,8);if(matches.length===0){drop.style.display='none';return;}drop.innerHTML=matches.map(function(p){return '<div class="sdrop-item" onclick="selectLogPart(\''+p.id+'\',\''+p.name.replace(/'/g,"\\'")+'\','+(p.storageRemaining||0)+','+(p.mechanicRemaining||0)+')"><div class="sdrop-id">'+p.id+'</div><div class="sdrop-name">'+p.name+'</div><div class="sdrop-meta">📦 Storage: '+(p.storageRemaining||0)+' | 🔧 Mechanic: '+(p.mechanicRemaining||0)+'</div></div>';}).join('');drop.style.display='block';}
+function selectLogPart(id,name,storage,mechanic){S.logSelected={id:id,name:name,storage:storage,mechanic:mechanic};document.getElementById('log-search').value=id+' — '+name;document.getElementById('log-drop').style.display='none';document.getElementById('log-sel').style.display='block';document.getElementById('log-sel-id').textContent=id;document.getElementById('log-sel-name').textContent=name;document.getElementById('log-sel-info').textContent='📦 Storage: '+storage+' | 🔧 Mechanic: '+mechanic;}
+function submitLog(){
+  if(!S.logSelected){showToast('Please select a part','error');return;}
+  var date=document.getElementById('log-date').value,type=document.getElementById('log-type').value;
+  var qty=parseInt(document.getElementById('log-qty').value),city=document.getElementById('log-city').value,note=document.getElementById('log-notes').value;
+  if(!date){showToast('Please select a date','error');return;}if(!type){showToast('Please select movement type','error');return;}if(!qty||qty<=0){showToast('Please enter valid quantity','error');return;}
+  var btn=document.getElementById('log-submit');btn.disabled=true;btn.textContent='Submitting...';
+  api({action:'logMovement',pin:S.user.pin,date:date,itemID:S.logSelected.id,name:S.logSelected.name,type:type,qty:qty,city:city||'',notes:note||''}).then(function(r){
+    if(r.success){showToast('✅ Movement logged!','success');S.logSelected=null;S.parts=[];document.getElementById('log-search').value='';document.getElementById('log-sel').style.display='none';document.getElementById('log-type').value='';document.getElementById('log-qty').value='';document.getElementById('log-city').value='';document.getElementById('log-notes').value='';document.getElementById('log-city-group').style.display='none';loadDashboardData(function(){});}
+    else{showToast('❌ '+r.error,'error');}
+    btn.disabled=false;btn.textContent='Submit Movement';
+  });
+}
+
+// HISTORY
+function renderHistory(){var q=(document.getElementById('hist-search').value||'').toLowerCase();var list=S.movements.filter(function(m){return !q||m.name.toLowerCase().indexOf(q)!==-1||m.type.toLowerCase().indexOf(q)!==-1||m.date.indexOf(q)!==-1;});if(list.length===0){document.getElementById('hist-content').innerHTML='<div class="empty"><div class="empty-icon">📋</div>No movements found</div>';return;}document.getElementById('hist-content').innerHTML=list.map(movCard).join('');}
+function movCard(m){var cls='transfer';if(m.type==='Incoming from supplier')cls='incoming';if(m.type==='Sent to other city')cls='sent';if(m.type==='Received from other city')cls='received';var clr=cls==='incoming'?'var(--green)':cls==='sent'?'var(--red)':cls==='received'?'var(--blue)':'var(--orange)';return '<div class="mov-card '+cls+'"><div class="mov-top"><span class="mov-type" style="color:'+clr+';">'+m.type+'</span><span class="mov-qty">×'+m.qty+'</span></div><div class="mov-name"><span style="color:var(--blue);font-weight:700;">'+(m.itemID||'')+'</span> — '+m.name+'</div><div class="mov-meta">📅 '+m.date+(m.city?' | 📍 '+m.city:'')+'</div></div>';}
+
+// ALERTS
+function renderAlerts(){var low=S.parts.filter(function(p){return p.storageLow||p.mechanicLow;});if(low.length===0){document.getElementById('alerts-content').innerHTML='<div class="empty"><div class="empty-icon">✅</div>All stock levels are good!</div>';return;}var html='<div class="section-title">⚠️ '+low.length+' parts need attention</div>';html+=low.map(function(p){return '<div class="alert-card"><div class="alert-name"><span style="color:var(--blue);font-weight:700;">'+p.id+'</span> — '+p.name+'</div>'+(p.storageLow?'<div class="alert-row"><span>📦 Storage Remaining</span><span class="alert-val">'+p.storageRemaining+' (min: '+p.minStorage+')</span></div>':'')+(p.mechanicLow?'<div class="alert-row"><span>🔧 Mechanic Remaining</span><span class="alert-val">'+p.mechanicRemaining+' (min: '+p.minMechanic+')</span></div>':'')+'</div>';}).join('');document.getElementById('alerts-content').innerHTML=html;}
+
+// TOAST
+function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'');t.style.display='block';setTimeout(function(){t.style.display='none';},3000);}
+
+// CLOSE DROPDOWNS
 document.addEventListener('click',function(e){
-  if (!e.target.closest('#part-search')&&!e.target.closest('#search-drop')) {
-    var d=document.getElementById('search-drop'); if(d) d.style.display='none';
-  }
-  if (!e.target.closest('#mgr-part-search')&&!e.target.closest('#mgr-part-dropdown')) {
-    var d=document.getElementById('mgr-part-dropdown'); if(d) d.style.display='none';
-  }
+  if(!e.target.closest('#count-search-input')&&!e.target.closest('#count-drop')){var d=document.getElementById('count-drop');if(d)d.style.display='none';}
+  if(!e.target.closest('#log-search')&&!e.target.closest('#log-drop')){var d=document.getElementById('log-drop');if(d)d.style.display='none';}
+  if(!e.target.closest('#storage-search')&&!e.target.closest('#storage-drop')){var d=document.getElementById('storage-drop');if(d)d.style.display='none';}
+  if(!e.target.closest('#mgr-part-input')&&!e.target.closest('#mgr-drop')){var d=document.getElementById('mgr-drop');if(d)d.style.display='none';}
 });
+
+// INIT
+window.onload=function(){
+  var savedUser=loadSession();if(savedUser){startApp(savedUser);}
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('/spare-parts-mobile/sw.js').then(function(){}).catch(function(){});}
+};
 </script>
 </body>
 </html>
