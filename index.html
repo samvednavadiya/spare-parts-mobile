@@ -646,6 +646,9 @@ function loadAdjustmentScreen(){
 
 function renderAdjustment(){
   var data=S.adjData;
+  // Always sort by highest remaining before rendering
+  data.reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+  data.useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   var html='';
   if(data.countName){html+='<div class="adj-count-info"><div class="adj-count-name">'+data.countName+'</div><div class="adj-count-sub">Make adjustments to match Physical vs Admin</div></div>';}
   html+='<div class="adj-live-badge">● LIVE — updates every 10 seconds</div>';
