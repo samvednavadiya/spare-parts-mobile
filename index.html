@@ -492,7 +492,16 @@ function startAdjRefresh(){
     if(!S.user||!S.user.permissions.adjustment)return;
     var active=document.querySelector('.screen.active');if(!active||active.id!=='screen-adjustment')return;
     api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
-      if(!r.success)return;S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};renderAdjustmentSilently();
+      if(!r.success)return;
+      var oldReduceCount=S.adjData.reduce.length;
+      var oldFreeCount=S.adjData.useFree.length;
+      S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};
+      // If count changed — full re-render
+      if(r.reduce.length!==oldReduceCount||r.useFree.length!==oldFreeCount){
+        renderAdjustment();
+      } else {
+        renderAdjustmentSilently();
+      }
     });
   },10000);
 }
