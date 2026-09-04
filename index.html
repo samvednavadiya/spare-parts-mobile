@@ -453,12 +453,15 @@ function doLogin(){
     btn.disabled=false;btn.textContent='Login';
   });
 }
-function startApp(user){
+function startApp(user, lastScreen){
   S.user=user;buildNav();
   loadDashboardData(function(){
     document.getElementById('screen-login').style.display='none';
     document.getElementById('bottom-nav').style.display='flex';
-    showScreen('home',document.getElementById('nav-home'));
+    var screen=lastScreen||'home';
+    var navBtn=document.getElementById('nav-'+screen);
+    if(!navBtn) screen='home', navBtn=document.getElementById('nav-home');
+    showScreen(screen, navBtn);
     startAutoRefresh();
   });
 }
