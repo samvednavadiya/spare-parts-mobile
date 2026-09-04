@@ -494,13 +494,18 @@ function startAdjRefresh(){
   S.adjRefreshTimer=setInterval(function(){
     if(!S.user||!S.user.permissions.adjustment)return;
     var active=document.querySelector('.screen.active');if(!active||active.id!=='screen-adjustment')return;
-    api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
+        api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
       if(!r.success)return;
       var oldReduceCount=S.adjData.reduce.length;
       var oldFreeCount=S.adjData.useFree.length;
-      S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};
+      // Always sort by highest remaining
+      var reduce=r.reduce||[];
+      var useFree=r.useFree||[];
+      reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+      useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+      S.adjData={reduce:reduce,useFree:useFree,countName:r.countName||''};
       // If count changed — full re-render
-      if(r.reduce.length!==oldReduceCount||r.useFree.length!==oldFreeCount){
+      if(reduce.length!==oldReduceCount||useFree.length!==oldFreeCount){
         renderAdjustment();
       } else {
         renderAdjustmentSilently();
