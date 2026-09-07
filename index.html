@@ -759,6 +759,13 @@ function changeConfirmQty(itemCode,delta){var qtyEl=document.getElementById('adj
 function cancelConfirm(itemCode){var confirmEl=document.getElementById('adj-confirm-'+itemCode);if(confirmEl)confirmEl.classList.remove('show');delete adjPendingAction[itemCode];}
 function saveConfirm(itemCode,type){
   var pending=adjPendingAction[itemCode];if(!pending)return;
+  // Prevent double tap — disable save button immediately
+  var saveBtn=document.getElementById('adj-save-'+itemCode);
+  if(saveBtn){
+    if(saveBtn.disabled)return; // already processing
+    saveBtn.disabled=true;
+    saveBtn.textContent='Saving...';
+  }
   var qtyEl=document.getElementById('adj-qty-'+itemCode);
   var qty=Math.max(1,parseInt(qtyEl?qtyEl.value:1)||1);
   var isUndo=pending.action==='undo';
