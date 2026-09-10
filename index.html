@@ -958,7 +958,7 @@ function submitLog(){
 }
 
 function cancelMovement(rowIndex,itemID,name,type,qty){
-  if(!confirm('Cancel this movement?\n\n'+type+' × '+qty+'\n'+itemID+' — '+name+'\n\nThis will create a reversal movement automatically.'))return;
+  if(!confirm('Delete this movement?\n\n'+type+' × '+qty+'\n'+itemID+' — '+name+'\n\nThis will automatically reverse the stock quantity.'))return;
   api({action:'cancelMovement',pin:S.user.pin,rowIndex:rowIndex}).then(function(r){
     if(r.success){
       showToast('✅ Movement cancelled!','success');
@@ -993,7 +993,7 @@ function movCard(m){
     html+='<div style="background:#e8f5e9;color:#1b5e20;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;margin-top:6px;">↩ REVERSAL</div>';
   }
   if(!isCancelled&&!isReversal&&S.user&&S.user.role==='Manager'){
-    html+='<button onclick="cancelMovement('+m.rowIndex+',\''+m.itemID+'\',\''+m.name.replace(/'/g,"\\'")+'\',\''+m.type+'\','+m.qty+')" style="width:100%;margin-top:8px;padding:8px;background:#fce8e6;color:#c62828;border:1px solid #ffcdd2;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">❌ Cancel Movement</button>';
+    html+='<button onclick="cancelMovement('+m.rowIndex+',\''+m.itemID+'\',\''+m.name.replace(/'/g,"\\'")+'\',\''+m.type+'\','+m.qty+')" style="width:100%;margin-top:8px;padding:8px;background:#fce8e6;color:#c62828;border:1px solid #ffcdd2;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">🗑️ Delete Movement</button>';
   }
   html+='</div>';
   return html;
