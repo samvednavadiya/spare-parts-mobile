@@ -453,15 +453,12 @@ function doLogin(){
     btn.disabled=false;btn.textContent='Login';
   });
 }
-function startApp(user, lastScreen){
+function startApp(user){
   S.user=user;buildNav();
   loadDashboardData(function(){
     document.getElementById('screen-login').style.display='none';
     document.getElementById('bottom-nav').style.display='flex';
-    var screen=lastScreen||'home';
-    var navBtn=document.getElementById('nav-'+screen);
-    if(!navBtn) screen='home', navBtn=document.getElementById('nav-home');
-    showScreen(screen, navBtn);
+    showScreen('home',document.getElementById('nav-home'));
     startAutoRefresh();
   });
 }
@@ -494,22 +491,8 @@ function startAdjRefresh(){
   S.adjRefreshTimer=setInterval(function(){
     if(!S.user||!S.user.permissions.adjustment)return;
     var active=document.querySelector('.screen.active');if(!active||active.id!=='screen-adjustment')return;
-        api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
-      if(!r.success)return;
-      var oldReduceCount=S.adjData.reduce.length;
-      var oldFreeCount=S.adjData.useFree.length;
-      // Always sort by highest remaining
-      var reduce=r.reduce||[];
-      var useFree=r.useFree||[];
-      reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
-      useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
-      S.adjData={reduce:reduce,useFree:useFree,countName:r.countName||''};
-      // If count changed — full re-render
-      if(reduce.length!==oldReduceCount||useFree.length!==oldFreeCount){
-        renderAdjustment();
-      } else {
-        renderAdjustmentSilently();
-      }
+    api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
+      if(!r.success)return;S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};renderAdjustmentSilently();
     });
   },10000);
 }
@@ -536,7 +519,6 @@ function showScreen(name,btn){
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
-  try{localStorage.setItem('lastScreen',name);}catch(e){}
   if(name==='home')renderHome();if(name==='count')loadCountScreen();if(name==='stock')renderStock();
   if(name==='log')initLog();if(name==='history')renderHistory();if(name==='alerts')renderAlerts();
   if(name==='storage')initStorageScreen();if(name==='inventory')loadInventoryScreen();
@@ -646,9 +628,6 @@ function loadAdjustmentScreen(){
 
 function renderAdjustment(){
   var data=S.adjData;
-  // Always sort by highest remaining before rendering
-  data.reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
-  data.useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   var html='';
   if(data.countName){html+='<div class="adj-count-info"><div class="adj-count-name">'+data.countName+'</div><div class="adj-count-sub">Make adjustments to match Physical vs Admin</div></div>';}
   html+='<div class="adj-live-badge">● LIVE — updates every 10 seconds</div>';
@@ -735,9 +714,7 @@ function filterAdjList(type,q){
   var el=document.getElementById(listId);
   if(!el)return;
   var ql=q.toLowerCase();
-  // Always sort by highest remaining first
   var filtered=!ql?list:list.filter(function(x){return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1;});
-  filtered=filtered.slice().sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No parts found</div>';return;}
   el.innerHTML=filtered.map(function(item){return adjCard(item,type,item.remaining===0);}).join('');
 }
@@ -759,36 +736,14 @@ function changeConfirmQty(itemCode,delta){var qtyEl=document.getElementById('adj
 function cancelConfirm(itemCode){var confirmEl=document.getElementById('adj-confirm-'+itemCode);if(confirmEl)confirmEl.classList.remove('show');delete adjPendingAction[itemCode];}
 function saveConfirm(itemCode,type){
   var pending=adjPendingAction[itemCode];if(!pending)return;
-  // Prevent double tap — disable save button immediately
-  var saveBtn=document.getElementById('adj-save-'+itemCode);
-  if(saveBtn){
-    if(saveBtn.disabled)return; // already processing
-    saveBtn.disabled=true;
-    saveBtn.textContent='Saving...';
-  }
   var qtyEl=document.getElementById('adj-qty-'+itemCode);
   var qty=Math.max(1,parseInt(qtyEl?qtyEl.value:1)||1);
   var isUndo=pending.action==='undo';
   cancelConfirm(itemCode);
-    api({action:'updateAdjustment',pin:S.user.pin,itemCode:itemCode,changeQty:qty,isUndo:isUndo?'true':'false',managerOverride:'false'})
+  api({action:'updateAdjustment',pin:S.user.pin,itemCode:itemCode,changeQty:qty,isUndo:isUndo?'true':'false',managerOverride:'false'})
   .then(function(r){
     if(!r.success){showToast('❌ '+r.error,'error');return;}
-    var allItems=S.adjData.reduce.concat(S.adjData.useFree);
-    var item=allItems.find(function(i){return i.id===itemCode;});
-    if(item) item.remaining=r.remaining;
-    var remEl=document.getElementById('adj-rem-'+itemCode);
-    var updEl=document.getElementById('adj-upd-'+itemCode);
-    var card =document.getElementById('adj-card-'+itemCode);
-    if(remEl) remEl.textContent=Math.abs(r.remaining);
-    if(updEl) updEl.textContent='👤 '+r.updatedBy;
-    var remClass=type==='Reduce'?'reduce':'usefree';
-    if(r.remaining===0){
-      if(remEl) remEl.className='adj-remaining done';
-      if(card)  card.classList.add('done');
-    } else {
-      if(remEl) remEl.className='adj-remaining '+remClass;
-      if(card)  card.classList.remove('done');
-    }
+    updateAdjCardUI(itemCode,type,r.remaining,r.updatedBy);
     showToast(isUndo?'↩ Undone '+qty+'!':'✅ Saved '+qty+'!','success');
   });
 }
@@ -1002,9 +957,47 @@ function submitLog(){
   });
 }
 
+function cancelMovement(rowIndex,itemID,name,type,qty){
+  if(!confirm('Cancel this movement?\n\n'+type+' × '+qty+'\n'+itemID+' — '+name+'\n\nThis will create a reversal movement automatically.'))return;
+  api({action:'cancelMovement',pin:S.user.pin,rowIndex:rowIndex}).then(function(r){
+    if(r.success){
+      showToast('✅ Movement cancelled!','success');
+      loadDashboardData(function(){ renderHistory(); });
+    } else { showToast('❌ '+r.error,'error'); }
+  });
+}
+
 // HISTORY
 function renderHistory(){var q=(document.getElementById('hist-search').value||'').toLowerCase();var list=S.movements.filter(function(m){return !q||m.name.toLowerCase().indexOf(q)!==-1||m.type.toLowerCase().indexOf(q)!==-1||m.date.indexOf(q)!==-1;});if(list.length===0){document.getElementById('hist-content').innerHTML='<div class="empty"><div class="empty-icon">📋</div>No movements found</div>';return;}document.getElementById('hist-content').innerHTML=list.map(movCard).join('');}
-function movCard(m){var cls='transfer';if(m.type==='Incoming from supplier')cls='incoming';if(m.type==='Sent to other city')cls='sent';if(m.type==='Received from other city')cls='received';var clr=cls==='incoming'?'var(--green)':cls==='sent'?'var(--red)':cls==='received'?'var(--blue)':'var(--orange)';return '<div class="mov-card '+cls+'"><div class="mov-top"><span class="mov-type" style="color:'+clr+';">'+m.type+'</span><span class="mov-qty">×'+m.qty+'</span></div><div class="mov-name"><span style="color:var(--blue);font-weight:700;">'+(m.itemID||'')+'</span> — '+m.name+'</div><div class="mov-meta">📅 '+m.date+(m.city?' | 📍 '+m.city:'')+'</div></div>';}
+function movCard(m){
+  var cls='transfer';
+  if(m.type==='Incoming from supplier')cls='incoming';
+  if(m.type==='Sent to other city')cls='sent';
+  if(m.type==='Received from other city')cls='received';
+  if(m.status==='Reversal')cls='incoming';
+  var clr=cls==='incoming'?'var(--green)':cls==='sent'?'var(--red)':cls==='received'?'var(--blue)':'var(--orange)';
+  var isCancelled=m.status==='Cancelled';
+  var isReversal=m.status==='Reversal';
+  var cardStyle=isCancelled?'opacity:0.6;':'';
+  var html='<div class="mov-card '+cls+'" style="'+cardStyle+'">';
+  html+='<div class="mov-top">';
+  html+='<span class="mov-type" style="color:'+clr+';">'+m.type+'</span>';
+  html+='<span class="mov-qty">×'+m.qty+'</span>';
+  html+='</div>';
+  html+='<div class="mov-name"><span style="color:var(--blue);font-weight:700;">'+(m.itemID||'')+'</span> — '+m.name+'</div>';
+  html+='<div class="mov-meta">📅 '+m.date+(m.city?' | 📍 '+m.city:'')+'</div>';
+  if(isCancelled){
+    html+='<div style="background:#fce8e6;color:#c62828;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;margin-top:6px;">❌ CANCELLED by '+m.cancelledBy+' at '+m.cancelledAt+'</div>';
+  }
+  if(isReversal){
+    html+='<div style="background:#e8f5e9;color:#1b5e20;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;margin-top:6px;">↩ REVERSAL</div>';
+  }
+  if(!isCancelled&&!isReversal&&S.user&&S.user.role==='Manager'){
+    html+='<button onclick="cancelMovement('+m.rowIndex+',\''+m.itemID+'\',\''+m.name.replace(/'/g,"\\'")+'\',\''+m.type+'\','+m.qty+')" style="width:100%;margin-top:8px;padding:8px;background:#fce8e6;color:#c62828;border:1px solid #ffcdd2;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;">❌ Cancel Movement</button>';
+  }
+  html+='</div>';
+  return html;
+}
 
 // ALERTS
 function renderAlerts(){var low=S.parts.filter(function(p){return p.storageLow||p.mechanicLow;});if(low.length===0){document.getElementById('alerts-content').innerHTML='<div class="empty"><div class="empty-icon">✅</div>All stock levels are good!</div>';return;}var html='<div class="section-title">⚠️ '+low.length+' parts need attention</div>';html+=low.map(function(p){return '<div class="alert-card"><div class="alert-name"><span style="color:var(--blue);font-weight:700;">'+p.id+'</span> — '+p.name+'</div>'+(p.storageLow?'<div class="alert-row"><span>📦 Storage Remaining</span><span class="alert-val">'+p.storageRemaining+' (min: '+p.minStorage+')</span></div>':'')+(p.mechanicLow?'<div class="alert-row"><span>🔧 Mechanic Remaining</span><span class="alert-val">'+p.mechanicRemaining+' (min: '+p.minMechanic+')</span></div>':'')+'</div>';}).join('');document.getElementById('alerts-content').innerHTML=html;}
@@ -1022,12 +1015,7 @@ document.addEventListener('click',function(e){
 
 // INIT
 window.onload=function(){
-  var savedUser=loadSession();
-  if(savedUser){
-    // Restore last screen
-    var lastScreen=localStorage.getItem('lastScreen')||'home';
-    startApp(savedUser, lastScreen);
-  }
+  var savedUser=loadSession();if(savedUser){startApp(savedUser);}
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/spare-parts-mobile/sw.js').then(function(){}).catch(function(){});}
 };
 </script>
