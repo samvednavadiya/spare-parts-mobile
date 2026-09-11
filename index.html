@@ -453,12 +453,15 @@ function doLogin(){
     btn.disabled=false;btn.textContent='Login';
   });
 }
-function startApp(user){
+function startApp(user,lastScreen){
   S.user=user;buildNav();
   loadDashboardData(function(){
     document.getElementById('screen-login').style.display='none';
     document.getElementById('bottom-nav').style.display='flex';
-    showScreen('home',document.getElementById('nav-home'));
+    var screen=lastScreen||'home';
+    var navBtn=document.getElementById('nav-'+screen);
+    if(!navBtn){screen='home';navBtn=document.getElementById('nav-home');}
+    showScreen(screen,navBtn);
     startAutoRefresh();
   });
 }
@@ -492,7 +495,19 @@ function startAdjRefresh(){
     if(!S.user||!S.user.permissions.adjustment)return;
     var active=document.querySelector('.screen.active');if(!active||active.id!=='screen-adjustment')return;
     api({action:'getAdjustment',pin:S.user.pin}).then(function(r){
-      if(!r.success)return;S.adjData={reduce:r.reduce||[],useFree:r.useFree||[],countName:r.countName||''};renderAdjustmentSilently();
+      if(!r.success)return;
+      var oldReduceCount=S.adjData.reduce.length;
+      var oldFreeCount=S.adjData.useFree.length;
+      var reduce=r.reduce||[];
+      var useFree=r.useFree||[];
+      reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+      useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+      S.adjData={reduce:reduce,useFree:useFree,countName:r.countName||''};
+      if(reduce.length!==oldReduceCount||useFree.length!==oldFreeCount){
+        renderAdjustment();
+      } else {
+        renderAdjustmentSilently();
+      }
     });
   },10000);
 }
@@ -519,6 +534,7 @@ function showScreen(name,btn){
   document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('screen-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
+  try{localStorage.setItem('lastScreen',name);}catch(e){}
   if(name==='home')renderHome();if(name==='count')loadCountScreen();if(name==='stock')renderStock();
   if(name==='log')initLog();if(name==='history')renderHistory();if(name==='alerts')renderAlerts();
   if(name==='storage')initStorageScreen();if(name==='inventory')loadInventoryScreen();
@@ -628,6 +644,9 @@ function loadAdjustmentScreen(){
 
 function renderAdjustment(){
   var data=S.adjData;
+  // Always sort by highest remaining before rendering
+  data.reduce.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
+  data.useFree.sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   var html='';
   if(data.countName){html+='<div class="adj-count-info"><div class="adj-count-name">'+data.countName+'</div><div class="adj-count-sub">Make adjustments to match Physical vs Admin</div></div>';}
   html+='<div class="adj-live-badge">● LIVE — updates every 10 seconds</div>';
@@ -715,6 +734,7 @@ function filterAdjList(type,q){
   if(!el)return;
   var ql=q.toLowerCase();
   var filtered=!ql?list:list.filter(function(x){return x.name.toLowerCase().indexOf(ql)!==-1||x.id.toLowerCase().indexOf(ql)!==-1;});
+  filtered=filtered.slice().sort(function(a,b){return Math.abs(b.remaining)-Math.abs(a.remaining);});
   if(filtered.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No parts found</div>';return;}
   el.innerHTML=filtered.map(function(item){return adjCard(item,type,item.remaining===0);}).join('');
 }
@@ -736,6 +756,8 @@ function changeConfirmQty(itemCode,delta){var qtyEl=document.getElementById('adj
 function cancelConfirm(itemCode){var confirmEl=document.getElementById('adj-confirm-'+itemCode);if(confirmEl)confirmEl.classList.remove('show');delete adjPendingAction[itemCode];}
 function saveConfirm(itemCode,type){
   var pending=adjPendingAction[itemCode];if(!pending)return;
+  var saveBtn=document.getElementById('adj-save-'+itemCode);
+  if(saveBtn){if(saveBtn.disabled)return;saveBtn.disabled=true;saveBtn.textContent='Saving...';}
   var qtyEl=document.getElementById('adj-qty-'+itemCode);
   var qty=Math.max(1,parseInt(qtyEl?qtyEl.value:1)||1);
   var isUndo=pending.action==='undo';
@@ -949,7 +971,9 @@ function submitLog(){
   var date=document.getElementById('log-date').value,type=document.getElementById('log-type').value;
   var qty=parseInt(document.getElementById('log-qty').value),city=document.getElementById('log-city').value,note=document.getElementById('log-notes').value;
   if(!date){showToast('Please select a date','error');return;}if(!type){showToast('Please select movement type','error');return;}if(!qty||qty<=0){showToast('Please enter valid quantity','error');return;}
-  var btn=document.getElementById('log-submit');btn.disabled=true;btn.textContent='Submitting...';
+  var btn=document.getElementById('log-submit');
+  if(btn.disabled)return;
+  btn.disabled=true;btn.textContent='Submitting...';
   api({action:'logMovement',pin:S.user.pin,date:date,itemID:S.logSelected.id,name:S.logSelected.name,type:type,qty:qty,city:city||'',notes:note||''}).then(function(r){
     if(r.success){showToast('✅ Movement logged!','success');S.logSelected=null;S.parts=[];document.getElementById('log-search').value='';document.getElementById('log-sel').style.display='none';document.getElementById('log-type').value='';document.getElementById('log-qty').value='';document.getElementById('log-city').value='';document.getElementById('log-notes').value='';document.getElementById('log-city-group').style.display='none';loadDashboardData(function(){});}
     else{showToast('❌ '+r.error,'error');}
@@ -1015,7 +1039,11 @@ document.addEventListener('click',function(e){
 
 // INIT
 window.onload=function(){
-  var savedUser=loadSession();if(savedUser){startApp(savedUser);}
+  var savedUser=loadSession();
+  if(savedUser){
+    var lastScreen=localStorage.getItem('lastScreen')||'home';
+    startApp(savedUser,lastScreen);
+  }
   if('serviceWorker' in navigator){navigator.serviceWorker.register('/spare-parts-mobile/sw.js').then(function(){}).catch(function(){});}
 };
 </script>
