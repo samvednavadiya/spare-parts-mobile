@@ -1,218 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Spare Parts">
-  <title>Spare Parts — Wolfsburg</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1a73e8">
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    :root {
-      --blue:#1a73e8; --green:#0f9d58; --red:#e53935; --orange:#f4b400; --purple:#4a148c;
-      --bg:#f0f2f5; --white:#ffffff; --border:#e0e0e0; --text:#333333; --muted:#888888; --radius:14px;
-    }
-    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; }
-    .bottom-nav { position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); overflow-x:auto; }
-    .nav-btn { flex:1; min-width:48px; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:9px; font-family:inherit; transition:color 0.15s; }
-    .nav-btn.active { color:var(--blue); }
-    .nav-btn .icon { font-size:20px; margin-bottom:2px; }
-    .screen { display:none; padding:16px 16px 90px; min-height:100vh; animation:fadeIn 0.2s; }
-    .screen.active { display:block; }
-    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-    #screen-login      { background:var(--blue); padding:0; display:flex; flex-direction:column; justify-content:center; min-height:100vh; }
-    #screen-home       { background:#e8f0fe; }
-    #screen-count      { background:#e8f5e9; }
-    #screen-stock      { background:#e6f4ea; }
-    #screen-log        { background:#fff8e1; }
-    #screen-history    { background:#f3e5f5; }
-    #screen-alerts     { background:#fce8e6; }
-    #screen-storage    { background:#e8f5e9; }
-    #screen-inventory  { background:#fffde7; }
-    #screen-adjustment { background:#f3e5f5; }
-    .login-box   { background:white; margin:24px 20px; border-radius:20px; padding:32px 24px; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
-    .login-logo  { font-size:48px; text-align:center; margin-bottom:8px; }
-    .login-title { font-size:22px; font-weight:700; text-align:center; color:var(--blue); margin-bottom:4px; }
-    .login-sub   { font-size:14px; color:var(--muted); text-align:center; margin-bottom:28px; }
-    .pin-label   { font-size:13px; color:var(--muted); font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
-    .pin-input   { width:100%; padding:16px; border:2px solid var(--border); border-radius:12px; font-size:24px; text-align:center; letter-spacing:8px; outline:none; font-family:inherit; color:var(--text); transition:border-color 0.15s; }
-    .pin-input:focus { border-color:var(--blue); }
-    .pin-error   { color:var(--red); font-size:13px; text-align:center; margin-top:8px; min-height:20px; }
-    .login-btn   { width:100%; padding:16px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:17px; font-weight:600; cursor:pointer; font-family:inherit; margin-top:16px; transition:opacity 0.15s; }
-    .login-btn:active { opacity:0.85; }
-    .login-btn:disabled { opacity:0.5; }
-    .cards-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
-    .stat-card  { background:white; border-radius:var(--radius); padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .stat-label { font-size:12px; color:var(--muted); margin-bottom:4px; }
-    .stat-value { font-size:28px; font-weight:700; }
-    .blue{color:var(--blue);} .green{color:var(--green);} .red{color:var(--red);} .orange{color:var(--orange);}
-    .section-title { font-size:16px; font-weight:600; margin:16px 0 10px; }
-    .progress-wrap  { background:white; border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .progress-top   { display:flex; justify-content:space-between; margin-bottom:8px; }
-    .progress-label { font-size:14px; font-weight:600; }
-    .progress-pct   { font-size:14px; font-weight:700; color:var(--blue); }
-    .progress-bar   { height:10px; background:#e0e0e0; border-radius:5px; overflow:hidden; }
-    .progress-fill  { height:100%; background:var(--green); border-radius:5px; transition:width 0.5s; }
-    .search-wrap { background:white; border-radius:var(--radius); padding:12px 16px; display:flex; align-items:center; gap:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .search-wrap input { border:none; outline:none; flex:1; font-size:15px; font-family:inherit; color:var(--text); background:transparent; }
-    .filter-row { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
-    .filter-row::-webkit-scrollbar { display:none; }
-    .ftab { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:white; font-size:13px; cursor:pointer; white-space:nowrap; font-family:inherit; }
-    .ftab.active { background:var(--blue); color:white; border-color:var(--blue); }
-    .part-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--border); }
-    .part-card.ok  { border-left-color:var(--green); }
-    .part-card.low { border-left-color:var(--red); }
-    .part-header { display:flex; align-items:center; flex-wrap:wrap; gap:3px; margin-bottom:10px; }
-    .part-id   { font-size:14px; font-weight:700; color:var(--blue); }
-    .part-sep  { font-size:14px; color:var(--muted); }
-    .part-name { font-size:14px; font-weight:500; color:var(--text); line-height:1.3; }
-    .part-stocks { display:flex; gap:12px; }
-    .stock-box   { text-align:center; }
-    .stock-lbl   { font-size:10px; color:var(--muted); margin-bottom:3px; }
-    .stock-val   { font-size:22px; font-weight:700; padding:2px 10px; border-radius:8px; display:inline-block; }
-    .storage-qty  { color:#1565c0; background:#e3f2fd; }
-    .mechanic-qty { color:#6a1b9a; background:#f3e5f5; }
-    .total-qty    { color:#e65100; background:#fff3e0; }
-    .low-qty      { color:white; background:var(--red); }
-    .count-card         { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .count-card.counted { border-left:4px solid var(--green); }
-    .count-qty-show     { font-size:28px; font-weight:700; color:var(--blue); }
-    .form-card  { background:white; border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:12px; }
-    .form-group { margin-bottom:16px; }
-    .form-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
-    .form-input,.form-select { width:100%; padding:14px; border:2px solid var(--border); border-radius:10px; font-size:16px; font-family:inherit; color:var(--text); background:white; outline:none; transition:border-color 0.15s; appearance:none; }
-    .form-input:focus,.form-select:focus { border-color:var(--blue); }
-    .count-input   { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; }
-    .storage-input { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; color:#1565c0; }
-    .qr-btn { width:100%; padding:16px; background:#e8f0fe; border:2px dashed var(--blue); border-radius:10px; color:var(--blue); font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; }
-    .sel-part { background:#e8f0fe; border:2px solid var(--blue); border-radius:10px; padding:14px; margin-bottom:16px; }
-    .sel-id   { font-size:15px; font-weight:700; color:var(--blue); }
-    .sel-name { font-size:15px; font-weight:500; color:var(--text); margin-top:2px; }
-    .sel-info { font-size:12px; color:var(--muted); margin-top:6px; }
-    .sdrop      { position:absolute; background:white; border:2px solid var(--border); border-radius:10px; max-height:240px; overflow-y:auto; z-index:200; width:calc(100% - 32px); box-shadow:0 4px 16px rgba(0,0,0,0.12); }
-    .sdrop-item { padding:14px 16px; cursor:pointer; border-bottom:1px solid #f5f5f5; }
-    .sdrop-item:last-child { border-bottom:none; }
-    .sdrop-item:active { background:#f5f5f5; }
-    .sdrop-id   { font-size:13px; font-weight:700; color:var(--blue); }
-    .sdrop-name { font-size:13px; color:var(--text); margin-top:2px; }
-    .sdrop-meta { font-size:11px; color:var(--muted); margin-top:2px; }
-    .submit-btn           { width:100%; padding:18px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:18px; font-weight:700; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
-    .submit-btn:active    { opacity:0.85; }
-    .submit-btn.green-btn { background:var(--green); }
-    .mgr-btn-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-    .mgr-btn        { flex:1; min-width:100px; padding:14px; border:none; border-radius:12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
-    .mgr-btn:active { opacity:0.85; }
-    .mgr-btn.start   { background:var(--green);  color:white; }
-    .mgr-btn.lock    { background:var(--red);    color:white; }
-    .mgr-btn.unlock  { background:var(--orange); color:white; }
-    .mgr-btn.approve { background:var(--purple); color:white; }
-    .mgr-btn.close   { background:#333;          color:white; }
-    .session-status          { border-radius:12px; padding:14px 16px; margin-bottom:16px; font-size:14px; font-weight:600; text-align:center; }
-    .session-status.inactive { background:#f5f5f5; color:var(--muted); }
-    .session-status.active   { background:#e8f5e9; color:var(--green); }
-    .session-status.locked   { background:#fce8e6; color:var(--red); }
-    .session-status.approved { background:#f3e5f5; color:var(--purple); }
-    .session-status.closed   { background:#333;    color:white; }
-    .mov-card          { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--blue); }
-    .mov-card.incoming { border-left-color:var(--green); }
-    .mov-card.transfer { border-left-color:var(--orange); }
-    .mov-card.sent     { border-left-color:var(--red); }
-    .mov-card.received { border-left-color:var(--blue); }
-    .mov-top  { display:flex; justify-content:space-between; margin-bottom:4px; }
-    .mov-type { font-size:11px; font-weight:700; text-transform:uppercase; }
-    .mov-qty  { font-size:18px; font-weight:700; }
-    .mov-name { font-size:14px; font-weight:500; margin-bottom:3px; }
-    .mov-meta { font-size:11px; color:var(--muted); }
-    .alert-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; border:1px solid #ffcdd2; }
-    .alert-name { font-size:14px; font-weight:600; color:var(--red); margin-bottom:6px; }
-    .alert-row  { display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:3px; }
-    .alert-val  { font-weight:700; color:var(--red); }
-    .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:12px 24px; border-radius:24px; font-size:14px; z-index:300; display:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:calc(100vw - 32px); text-align:center; }
-    .toast.success { background:var(--green); }
-    .toast.error   { background:var(--red); }
-    .loading    { text-align:center; padding:60px 16px; color:var(--muted); }
-    .spinner    { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 14px; }
-    @keyframes spin { to{transform:rotate(360deg);} }
-    .empty      { text-align:center; padding:60px 16px; color:var(--muted); font-size:15px; }
-    .empty-icon { font-size:56px; margin-bottom:14px; }
-    .modal-overlay      { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:400; display:none; align-items:center; justify-content:center; padding:20px; }
-    .modal-overlay.show { display:flex; }
-    .modal-box          { background:white; border-radius:20px; padding:24px; width:100%; max-width:380px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
-    .modal-title        { font-size:18px; font-weight:700; margin-bottom:12px; }
-    .modal-text         { font-size:14px; color:#555; margin-bottom:20px; line-height:1.5; }
-    .modal-btns         { display:flex; gap:10px; }
-    .modal-btn          { flex:1; padding:14px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .modal-btn.cancel   { background:#f5f5f5; color:var(--text); }
-    .modal-btn.override { background:var(--red); color:white; }
-    .storage-info       { background:#e3f2fd; border:2px solid #1565c0; border-radius:12px; padding:14px 16px; margin-bottom:16px; text-align:center; }
-    .storage-info-title { font-size:14px; font-weight:700; color:#1565c0; margin-bottom:4px; }
-    .storage-info-sub   { font-size:12px; color:#555; }
-    .live-badge { display:inline-block; background:#e8f5e9; color:var(--green); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; animation:pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-    .qr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; }
-    .qr-overlay.show { display:flex; }
-    .qr-header { color:white; font-size:18px; font-weight:600; margin-bottom:20px; text-align:center; padding:0 20px; }
-    .qr-video-wrap { position:relative; width:300px; height:300px; border-radius:16px; overflow:hidden; background:#000; }
-    .qr-video { width:100%; height:100%; object-fit:cover; display:block; }
-    .qr-frame { position:absolute; inset:0; border:3px solid var(--blue); border-radius:16px; pointer-events:none; }
-    .qr-line  { position:absolute; left:10%; right:10%; height:2px; background:var(--blue); animation:scan 2s linear infinite; box-shadow:0 0 8px var(--blue); }
-    @keyframes scan { 0%{top:10%;} 100%{top:90%;} }
-    .qr-corners::before,.qr-corners::after { content:''; position:absolute; width:24px; height:24px; border-color:white; border-style:solid; }
-    .qr-corners::before { top:8px; left:8px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-    .qr-corners::after  { bottom:8px; right:8px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
-    .qr-hint   { color:rgba(255,255,255,0.7); font-size:14px; margin-top:16px; text-align:center; padding:0 20px; }
-    .qr-cancel { margin-top:24px; padding:14px 40px; background:white; color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; width:100%; }
-    .count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .count-tab  { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
-    .count-tab.active { background:var(--blue); color:white; }
-    .count-tab.green-tab.active { background:var(--green); color:white; }
-    .count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
-    .inv-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .inv-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
-    .inv-admin    { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
-    /* Adjustment */
-    .adj-count-info { background:#f3e5f5; border:2px solid var(--purple); border-radius:12px; padding:10px 16px; margin-bottom:10px; text-align:center; }
-    .adj-count-name { font-size:14px; font-weight:700; color:var(--purple); }
-    .adj-count-sub  { font-size:12px; color:#555; margin-top:2px; }
-    .adj-live-badge { display:inline-block; background:#e8f0fe; color:var(--blue); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-bottom:10px; animation:pulse 2s infinite; }
-    .adj-columns { display:flex; gap:8px; height:calc(100vh - 220px); }
-    .adj-col { flex:1; display:flex; flex-direction:column; min-width:0; }
-    .adj-col-header { padding:8px 6px; border-radius:10px; font-size:11px; font-weight:700; margin-bottom:6px; text-align:center; flex-shrink:0; line-height:1.4; }
-    .adj-col-header.reduce  { background:#fce8e6; color:#c62828; }
-    .adj-col-header.usefree { background:#e8f5e9; color:#1b5e20; }
-    .adj-search { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:12px; font-family:inherit; margin-bottom:6px; outline:none; flex-shrink:0; }
-    .adj-col-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .adj-col-list::-webkit-scrollbar { width:3px; }
-    .adj-col-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-    .adj-card { background:white; border-radius:10px; padding:8px 10px; margin-bottom:6px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-    .adj-card.reduce  { border-left:3px solid var(--red); }
-    .adj-card.usefree { border-left:3px solid var(--green); }
-    .adj-card.done    { border-left:3px solid var(--muted); opacity:0.5; }
-    .adj-remaining { font-size:22px; font-weight:700; }
-    .adj-remaining.reduce  { color:#c62828; }
-    .adj-remaining.usefree { color:#1b5e20; }
-    .adj-remaining.done    { color:var(--muted); }
-    .adj-btn { border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; transition:opacity 0.15s; }
-    .adj-btn:active { opacity:0.7; }
-    .adj-btn.adjust { background:var(--blue); color:white; padding:6px 10px; font-size:12px; flex:1; }
-    .adj-btn.undo   { background:#fff8e1; color:#b45309; width:30px; height:30px; font-size:14px; }
-    .adj-confirm { background:#f0f4ff; border:1px solid var(--blue); border-radius:8px; padding:8px; margin-top:6px; display:none; }
-    .adj-confirm.show { display:block; }
-    .adj-qty-row { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
-    .adj-qty-input { width:44px; height:32px; border:2px solid var(--blue); border-radius:8px; text-align:center; font-size:16px; font-weight:700; font-family:inherit; outline:none; }
-    .adj-save-btn { flex:1; padding:7px; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-    .adj-cancel-btn { padding:7px 8px; background:#e0e0e0; color:var(--text); border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
-    .mgr-override-box { background:#fff3e0; border:1px solid #ffe0b2; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
-    .mgr-override-title { font-size:12px; font-weight:700; color:#e65100; margin-bottom:6px; }
-    .mgr-override-row { display:flex; gap:6px; align-items:center; }
-    .mgr-override-input { flex:1; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; }
-    .mgr-override-qty { width:60px; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; text-align:center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spare Parts">
+<title>Spare Parts — Wolfsburg</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --blue:#1a73e8; --green:#0f9d58; --red:#e53935; --orange:#f4b400; --purple:#4a148c;
+  --bg:#f0f2f5; --white:#ffffff; --border:#e0e0e0; --text:#333333; --muted:#888888; --radius:14px;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; max-width:480px; margin:0 auto; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; max-width:480px; margin:0 auto; background:white; display:flex; border-top:1px solid var(--border); z-index:100; box-shadow:0 -2px 8px rgba(0,0,0,0.08); padding-bottom:env(safe-area-inset-bottom); overflow-x:auto; }
+.nav-btn { flex:1; min-width:48px; display:flex; flex-direction:column; align-items:center; padding:8px 2px 6px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:9px; font-family:inherit; transition:color 0.15s; }
+.nav-btn.active { color:var(--blue); }
+.nav-btn .icon { font-size:20px; margin-bottom:2px; }
+.screen { display:none; padding:16px 16px 90px; min-height:100vh; animation:fadeIn 0.2s; }
+.screen.active { display:block; }
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+#screen-login { background:var(--blue); padding:0; display:flex; flex-direction:column; justify-content:center; min-height:100vh; }
+#screen-home { background:#e8f0fe; }
+#screen-count { background:#e8f5e9; }
+#screen-stock { background:#e6f4ea; }
+#screen-log { background:#fff8e1; }
+#screen-history { background:#f3e5f5; }
+#screen-alerts { background:#fce8e6; }
+#screen-storage { background:#e8f5e9; }
+#screen-inventory { background:#fffde7; }
+#screen-adjustment { background:#f3e5f5; }
+.login-box { background:white; margin:24px 20px; border-radius:20px; padding:32px 24px; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
+.login-logo { font-size:48px; text-align:center; margin-bottom:8px; }
+.login-title { font-size:22px; font-weight:700; text-align:center; color:var(--blue); margin-bottom:4px; }
+.login-sub { font-size:14px; color:var(--muted); text-align:center; margin-bottom:28px; }
+.pin-label { font-size:13px; color:var(--muted); font-weight:500; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
+.pin-input { width:100%; padding:16px; border:2px solid var(--border); border-radius:12px; font-size:24px; text-align:center; letter-spacing:8px; outline:none; font-family:inherit; color:var(--text); transition:border-color 0.15s; }
+.pin-input:focus { border-color:var(--blue); }
+.pin-error { color:var(--red); font-size:13px; text-align:center; margin-top:8px; min-height:20px; }
+.login-btn { width:100%; padding:16px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:17px; font-weight:600; cursor:pointer; font-family:inherit; margin-top:16px; transition:opacity 0.15s; }
+.login-btn:active { opacity:0.85; }
+.login-btn:disabled { opacity:0.5; }
+.cards-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.stat-card { background:white; border-radius:var(--radius); padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.stat-label { font-size:12px; color:var(--muted); margin-bottom:4px; }
+.stat-value { font-size:28px; font-weight:700; }
+.blue{color:var(--blue);} .green{color:var(--green);} .red{color:var(--red);} .orange{color:var(--orange);}
+.section-title { font-size:16px; font-weight:600; margin:16px 0 10px; }
+.progress-wrap { background:white; border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.progress-top { display:flex; justify-content:space-between; margin-bottom:8px; }
+.progress-label { font-size:14px; font-weight:600; }
+.progress-pct { font-size:14px; font-weight:700; color:var(--blue); }
+.progress-bar { height:10px; background:#e0e0e0; border-radius:5px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--green); border-radius:5px; transition:width 0.5s; }
+.search-wrap { background:white; border-radius:var(--radius); padding:12px 16px; display:flex; align-items:center; gap:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.search-wrap input { border:none; outline:none; flex:1; font-size:15px; font-family:inherit; color:var(--text); background:transparent; }
+.filter-row { display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.filter-row::-webkit-scrollbar { display:none; }
+.ftab { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:white; font-size:13px; cursor:pointer; white-space:nowrap; font-family:inherit; }
+.ftab.active { background:var(--blue); color:white; border-color:var(--blue); }
+.part-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--border); }
+.part-card.ok { border-left-color:var(--green); }
+.part-card.low { border-left-color:var(--red); }
+.part-header { display:flex; align-items:center; flex-wrap:wrap; gap:3px; margin-bottom:10px; }
+.part-id { font-size:14px; font-weight:700; color:var(--blue); }
+.part-sep { font-size:14px; color:var(--muted); }
+.part-name { font-size:14px; font-weight:500; color:var(--text); line-height:1.3; }
+.part-stocks { display:flex; gap:12px; }
+.stock-box { text-align:center; }
+.stock-lbl { font-size:10px; color:var(--muted); margin-bottom:3px; }
+.stock-val { font-size:22px; font-weight:700; padding:2px 10px; border-radius:8px; display:inline-block; }
+.storage-qty { color:#1565c0; background:#e3f2fd; }
+.mechanic-qty { color:#6a1b9a; background:#f3e5f5; }
+.total-qty { color:#e65100; background:#fff3e0; }
+.low-qty { color:white; background:var(--red); }
+.count-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.count-card.counted { border-left:4px solid var(--green); }
+.count-qty-show { font-size:28px; font-weight:700; color:var(--blue); }
+.form-card { background:white; border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-bottom:12px; }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
+.form-input,.form-select { width:100%; padding:14px; border:2px solid var(--border); border-radius:10px; font-size:16px; font-family:inherit; color:var(--text); background:white; outline:none; transition:border-color 0.15s; appearance:none; }
+.form-input:focus,.form-select:focus { border-color:var(--blue); }
+.count-input { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; }
+.storage-input { font-size:32px; font-weight:700; text-align:center; letter-spacing:4px; color:#1565c0; }
+.qr-btn { width:100%; padding:16px; background:#e8f0fe; border:2px dashed var(--blue); border-radius:10px; color:var(--blue); font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; }
+.sel-part { background:#e8f0fe; border:2px solid var(--blue); border-radius:10px; padding:14px; margin-bottom:16px; }
+.sel-id { font-size:15px; font-weight:700; color:var(--blue); }
+.sel-name { font-size:15px; font-weight:500; color:var(--text); margin-top:2px; }
+.sel-info { font-size:12px; color:var(--muted); margin-top:6px; }
+.sdrop { position:absolute; background:white; border:2px solid var(--border); border-radius:10px; max-height:240px; overflow-y:auto; z-index:200; width:calc(100% - 32px); box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+.sdrop-item { padding:14px 16px; cursor:pointer; border-bottom:1px solid #f5f5f5; }
+.sdrop-item:last-child { border-bottom:none; }
+.sdrop-item:active { background:#f5f5f5; }
+.sdrop-id { font-size:13px; font-weight:700; color:var(--blue); }
+.sdrop-name { font-size:13px; color:var(--text); margin-top:2px; }
+.sdrop-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.submit-btn { width:100%; padding:18px; background:var(--blue); color:white; border:none; border-radius:12px; font-size:18px; font-weight:700; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
+.submit-btn:active { opacity:0.85; }
+.submit-btn.green-btn { background:var(--green); }
+.mgr-btn-row { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.mgr-btn { flex:1; min-width:100px; padding:14px; border:none; border-radius:12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity 0.15s; }
+.mgr-btn:active { opacity:0.85; }
+.mgr-btn.start { background:var(--green); color:white; }
+.mgr-btn.lock { background:var(--red); color:white; }
+.mgr-btn.unlock { background:var(--orange); color:white; }
+.mgr-btn.approve { background:var(--purple); color:white; }
+.mgr-btn.close { background:#333; color:white; }
+.session-status { border-radius:12px; padding:14px 16px; margin-bottom:16px; font-size:14px; font-weight:600; text-align:center; }
+.session-status.inactive { background:#f5f5f5; color:var(--muted); }
+.session-status.active { background:#e8f5e9; color:var(--green); }
+.session-status.locked { background:#fce8e6; color:var(--red); }
+.session-status.approved { background:#f3e5f5; color:var(--purple); }
+.session-status.closed { background:#333; color:white; }
+.mov-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); border-left:4px solid var(--blue); }
+.mov-card.incoming { border-left-color:var(--green); }
+.mov-card.transfer { border-left-color:var(--orange); }
+.mov-card.sent { border-left-color:var(--red); }
+.mov-card.received { border-left-color:var(--blue); }
+.mov-top { display:flex; justify-content:space-between; margin-bottom:4px; }
+.mov-type { font-size:11px; font-weight:700; text-transform:uppercase; }
+.mov-qty { font-size:18px; font-weight:700; }
+.mov-name { font-size:14px; font-weight:500; margin-bottom:3px; }
+.mov-meta { font-size:11px; color:var(--muted); }
+.alert-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; border:1px solid #ffcdd2; }
+.alert-name { font-size:14px; font-weight:600; color:var(--red); margin-bottom:6px; }
+.alert-row { display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:3px; }
+.alert-val { font-weight:700; color:var(--red); }
+.toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:12px 24px; border-radius:24px; font-size:14px; z-index:300; display:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.2); max-width:calc(100vw - 32px); text-align:center; }
+.toast.success { background:var(--green); }
+.toast.error { background:var(--red); }
+.loading { text-align:center; padding:60px 16px; color:var(--muted); }
+.spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 14px; }
+@keyframes spin { to{transform:rotate(360deg);} }
+.empty { text-align:center; padding:60px 16px; color:var(--muted); font-size:15px; }
+.empty-icon { font-size:56px; margin-bottom:14px; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:400; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.show { display:flex; }
+.modal-box { background:white; border-radius:20px; padding:24px; width:100%; max-width:380px; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+.modal-title { font-size:18px; font-weight:700; margin-bottom:12px; }
+.modal-text { font-size:14px; color:#555; margin-bottom:20px; line-height:1.5; }
+.modal-btns { display:flex; gap:10px; }
+.modal-btn { flex:1; padding:14px; border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit; }
+.modal-btn.cancel { background:#f5f5f5; color:var(--text); }
+.modal-btn.override { background:var(--red); color:white; }
+.storage-info { background:#e3f2fd; border:2px solid #1565c0; border-radius:12px; padding:14px 16px; margin-bottom:16px; text-align:center; }
+.storage-info-title { font-size:14px; font-weight:700; color:#1565c0; margin-bottom:4px; }
+.storage-info-sub { font-size:12px; color:#555; }
+.live-badge { display:inline-block; background:#e8f5e9; color:var(--green); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+.qr-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:500; display:none; flex-direction:column; align-items:center; justify-content:center; }
+.qr-overlay.show { display:flex; }
+.qr-header { color:white; font-size:18px; font-weight:600; margin-bottom:20px; text-align:center; padding:0 20px; }
+.qr-video-wrap { position:relative; width:300px; height:300px; border-radius:16px; overflow:hidden; background:#000; }
+.qr-video { width:100%; height:100%; object-fit:cover; display:block; }
+.qr-frame { position:absolute; inset:0; border:3px solid var(--blue); border-radius:16px; pointer-events:none; }
+.qr-line { position:absolute; left:10%; right:10%; height:2px; background:var(--blue); animation:scan 2s linear infinite; box-shadow:0 0 8px var(--blue); }
+@keyframes scan { 0%{top:10%;} 100%{top:90%;} }
+.qr-corners::before,.qr-corners::after { content:''; position:absolute; width:24px; height:24px; border-color:white; border-style:solid; }
+.qr-corners::before { top:8px; left:8px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.qr-corners::after { bottom:8px; right:8px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+.qr-hint { color:rgba(255,255,255,0.7); font-size:14px; margin-top:16px; text-align:center; padding:0 20px; }
+.qr-cancel { margin-top:24px; padding:14px 40px; background:white; color:var(--text); border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
+.qr-status { color:var(--orange); font-size:13px; margin-top:10px; min-height:20px; text-align:center; padding:0 20px; width:100%; }
+.count-tabs { display:flex; gap:0; margin-bottom:16px; background:white; border-radius:12px; padding:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.count-tab { flex:1; padding:10px; border:none; background:none; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; border-radius:10px; transition:all 0.15s; color:var(--muted); }
+.count-tab.active { background:var(--blue); color:white; }
+.count-tab.green-tab.active { background:var(--green); color:white; }
+.count-now-btn { padding:8px 16px; background:#e8f0fe; color:var(--blue); border:none; border-radius:8px; font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap; }
+.inv-card { background:white; border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.inv-physical { color:#1b5e20; background:#e8f5e9; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
+.inv-admin { color:#1565c0; background:#e3f2fd; padding:2px 10px; border-radius:8px; font-size:20px; font-weight:700; display:inline-block; }
+/* Adjustment */
+.adj-count-info { background:#f3e5f5; border:2px solid var(--purple); border-radius:12px; padding:10px 16px; margin-bottom:10px; text-align:center; }
+.adj-count-name { font-size:14px; font-weight:700; color:var(--purple); }
+.adj-count-sub { font-size:12px; color:#555; margin-top:2px; }
+.adj-live-badge { display:inline-block; background:#e8f0fe; color:var(--blue); font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-bottom:10px; animation:pulse 2s infinite; }
+.adj-columns { display:flex; gap:8px; height:calc(100vh - 220px); }
+.adj-col { flex:1; display:flex; flex-direction:column; min-width:0; }
+.adj-col-header { padding:8px 6px; border-radius:10px; font-size:11px; font-weight:700; margin-bottom:6px; text-align:center; flex-shrink:0; line-height:1.4; }
+.adj-col-header.reduce { background:#fce8e6; color:#c62828; }
+.adj-col-header.usefree { background:#e8f5e9; color:#1b5e20; }
+.adj-search { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:12px; font-family:inherit; margin-bottom:6px; outline:none; flex-shrink:0; }
+.adj-col-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.adj-col-list::-webkit-scrollbar { width:3px; }
+.adj-col-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.adj-card { background:white; border-radius:10px; padding:8px 10px; margin-bottom:6px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.adj-card.reduce { border-left:3px solid var(--red); }
+.adj-card.usefree { border-left:3px solid var(--green); }
+.adj-card.done { border-left:3px solid var(--muted); opacity:0.5; }
+.adj-remaining { font-size:22px; font-weight:700; }
+.adj-remaining.reduce { color:#c62828; }
+.adj-remaining.usefree { color:#1b5e20; }
+.adj-remaining.done { color:var(--muted); }
+.adj-btn { border:none; border-radius:8px; font-weight:700; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; transition:opacity 0.15s; }
+.adj-btn:active { opacity:0.7; }
+.adj-btn.adjust { background:var(--blue); color:white; padding:6px 10px; font-size:12px; flex:1; }
+.adj-btn.undo { background:#fff8e1; color:#b45309; width:30px; height:30px; font-size:14px; }
+.adj-confirm { background:#f0f4ff; border:1px solid var(--blue); border-radius:8px; padding:8px; margin-top:6px; display:none; }
+.adj-confirm.show { display:block; }
+.adj-qty-row { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+.adj-qty-input { width:44px; height:32px; border:2px solid var(--blue); border-radius:8px; text-align:center; font-size:16px; font-weight:700; font-family:inherit; outline:none; }
+.adj-save-btn { flex:1; padding:7px; color:white; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
+.adj-cancel-btn { padding:7px 8px; background:#e0e0e0; color:var(--text); border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+.mgr-override-box { background:#fff3e0; border:1px solid #ffe0b2; border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+.mgr-override-title { font-size:12px; font-weight:700; color:#e65100; margin-bottom:6px; }
+.mgr-override-row { display:flex; gap:6px; align-items:center; }
+.mgr-override-input { flex:1; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; }
+.mgr-override-qty { width:60px; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; text-align:center; }
+</style>
 </head>
 <body>
 
@@ -220,153 +220,153 @@
 
 <!-- QR SCANNER -->
 <div class="qr-overlay" id="qr-overlay">
-  <div class="qr-header" id="qr-header">📷 Scan QR Code</div>
-  <div class="qr-video-wrap">
-    <video class="qr-video" id="qr-video" autoplay muted playsinline></video>
-    <div class="qr-frame"><div class="qr-line"></div><div class="qr-corners"></div></div>
-  </div>
-  <div class="qr-hint">Point camera at the QR code on the box</div>
-  <div class="qr-status" id="qr-status"></div>
-  <button class="qr-cancel" onclick="stopQRScan()">✕ Cancel</button>
+<div class="qr-header" id="qr-header">📷 Scan QR Code</div>
+<div class="qr-video-wrap">
+<video class="qr-video" id="qr-video" autoplay muted playsinline></video>
+<div class="qr-frame"><div class="qr-line"></div><div class="qr-corners"></div></div>
+</div>
+<div class="qr-hint">Point camera at the QR code on the box</div>
+<div class="qr-status" id="qr-status"></div>
+<button class="qr-cancel" onclick="stopQRScan()">✕ Cancel</button>
 </div>
 
 <!-- OVERRIDE MODAL -->
 <div class="modal-overlay" id="override-modal">
-  <div class="modal-box">
-    <div class="modal-title">⚠️ Already Counted</div>
-    <div class="modal-text" id="override-text"></div>
-    <div class="modal-btns">
-      <button class="modal-btn cancel"   onclick="closeOverrideModal()">Cancel</button>
-      <button class="modal-btn override" onclick="confirmOverride()">Override</button>
-    </div>
-  </div>
+<div class="modal-box">
+<div class="modal-title">⚠️ Already Counted</div>
+<div class="modal-text" id="override-text"></div>
+<div class="modal-btns">
+<button class="modal-btn cancel" onclick="closeOverrideModal()">Cancel</button>
+<button class="modal-btn override" onclick="confirmOverride()">Override</button>
+</div>
+</div>
 </div>
 
 <!-- LOGIN -->
 <div class="screen active" id="screen-login">
-  <div class="login-box">
-    <div class="login-logo">🔧</div>
-    <div class="login-title">Spare Parts</div>
-    <div class="login-sub">Wolfsburg Inventory</div>
-    <div class="pin-label">Enter your PIN</div>
-    <input type="password" inputmode="numeric" class="pin-input" id="pin-input"
-           placeholder="••••" maxlength="6"
-           onkeyup="if(event.key==='Enter') doLogin()">
-    <div class="pin-error" id="pin-error"></div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Login</button>
-  </div>
+<div class="login-box">
+<div class="login-logo">🔧</div>
+<div class="login-title">Spare Parts</div>
+<div class="login-sub">Wolfsburg Inventory</div>
+<div class="pin-label">Enter your PIN</div>
+<input type="password" inputmode="numeric" class="pin-input" id="pin-input"
+placeholder="••••" maxlength="6"
+onkeyup="if(event.key==='Enter') doLogin()">
+<div class="pin-error" id="pin-error"></div>
+<button class="login-btn" id="login-btn" onclick="doLogin()">Login</button>
+</div>
 </div>
 
 <!-- HOME -->
 <div class="screen" id="screen-home">
-  <div id="home-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div id="home-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- COUNT -->
 <div class="screen" id="screen-count">
-  <div id="count-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div id="count-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- STOCK -->
 <div class="screen" id="screen-stock">
-  <div class="search-wrap"><span>🔍</span><input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()"></div>
-  <div class="filter-row">
-    <button class="ftab active" onclick="setStockFilter('all',this)">All</button>
-    <button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low</button>
-    <button class="ftab" onclick="setStockFilter('storage',this)">📦 Storage</button>
-    <button class="ftab" onclick="setStockFilter('mechanic',this)">🔧 Mechanic</button>
-  </div>
-  <div id="stock-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
-  <div id="stock-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div class="search-wrap"><span>🔍</span><input type="text" id="stock-search" placeholder="Search parts..." oninput="filterStock()"></div>
+<div class="filter-row">
+<button class="ftab active" onclick="setStockFilter('all',this)">All</button>
+<button class="ftab" onclick="setStockFilter('low',this)">⚠️ Low</button>
+<button class="ftab" onclick="setStockFilter('storage',this)">📦 Storage</button>
+<button class="ftab" onclick="setStockFilter('mechanic',this)">🔧 Mechanic</button>
+</div>
+<div id="stock-count" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+<div id="stock-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- LOG -->
 <div class="screen" id="screen-log">
-  <div class="form-card">
-    <div class="section-title" style="margin-top:0;">Log Movement</div>
-    <button class="qr-btn" onclick="startQRScan('log')">📷 Scan QR Code</button>
-    <div class="form-group" style="position:relative;">
-      <label class="form-label">Search Part</label>
-      <input type="text" class="form-input" id="log-search" placeholder="Type name or code..." oninput="onLogSearch(this.value)" autocomplete="off">
-      <div class="sdrop" id="log-drop" style="display:none;"></div>
-    </div>
-    <div class="sel-part" id="log-sel" style="display:none;">
-      <div class="sel-id" id="log-sel-id"></div>
-      <div class="sel-name" id="log-sel-name"></div>
-      <div class="sel-info" id="log-sel-info"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="log-date"></div>
-    <div class="form-group">
-      <label class="form-label">Movement Type</label>
-      <select class="form-select" id="log-type" onchange="onLogTypeChange()">
-        <option value="">Select type...</option>
-        <option value="Incoming from supplier">📥 Incoming from supplier</option>
-        <option value="Transfer to mechanic">🔧 Transfer to mechanic</option>
-        <option value="Sent to other city">🚚 Sent to other city</option>
-        <option value="Received from other city">📦 Received from other city</option>
-      </select>
-    </div>
-    <div class="form-group"><label class="form-label">Quantity</label><input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1"></div>
-    <div class="form-group" id="log-city-group" style="display:none;"><label class="form-label">City</label><input type="text" class="form-input" id="log-city" placeholder="City name..."></div>
-    <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="log-notes" placeholder="Any notes..."></div>
-    <button class="submit-btn" id="log-submit" onclick="submitLog()">Submit Movement</button>
-  </div>
+<div class="form-card">
+<div class="section-title" style="margin-top:0;">Log Movement</div>
+<button class="qr-btn" onclick="startQRScan('log')">📷 Scan QR Code</button>
+<div class="form-group" style="position:relative;">
+<label class="form-label">Search Part</label>
+<input type="text" class="form-input" id="log-search" placeholder="Type name or code..." oninput="onLogSearch(this.value)" autocomplete="off">
+<div class="sdrop" id="log-drop" style="display:none;"></div>
+</div>
+<div class="sel-part" id="log-sel" style="display:none;">
+<div class="sel-id" id="log-sel-id"></div>
+<div class="sel-name" id="log-sel-name"></div>
+<div class="sel-info" id="log-sel-info"></div>
+</div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="log-date"></div>
+<div class="form-group">
+<label class="form-label">Movement Type</label>
+<select class="form-select" id="log-type" onchange="onLogTypeChange()">
+<option value="">Select type...</option>
+<option value="Incoming from supplier">📥 Incoming from supplier</option>
+<option value="Transfer to mechanic">🔧 Transfer to mechanic</option>
+<option value="Sent to other city">🚚 Sent to other city</option>
+<option value="Received from other city">📦 Received from other city</option>
+</select>
+</div>
+<div class="form-group"><label class="form-label">Quantity</label><input type="number" class="form-input" id="log-qty" placeholder="Enter quantity..." min="1"></div>
+<div class="form-group" id="log-city-group" style="display:none;"><label class="form-label">City</label><input type="text" class="form-input" id="log-city" placeholder="City name..."></div>
+<div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="log-notes" placeholder="Any notes..."></div>
+<button class="submit-btn" id="log-submit" onclick="submitLog()">Submit Movement</button>
+</div>
 </div>
 
 <!-- HISTORY -->
 <div class="screen" id="screen-history">
-  <div class="search-wrap"><span>🔍</span><input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()"></div>
-  <div id="hist-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div class="search-wrap"><span>🔍</span><input type="text" id="hist-search" placeholder="Search movements..." oninput="filterHistory()"></div>
+<div id="hist-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- ALERTS -->
 <div class="screen" id="screen-alerts">
-  <div id="alerts-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div id="alerts-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- STORAGE -->
 <div class="screen" id="screen-storage">
-  <div class="storage-info">
-    <div class="storage-info-title">📦 Storage Opening Qty Entry</div>
-    <div class="storage-info-sub">Scan QR or search — enter physical count for Storage Area only</div>
-  </div>
-  <div class="form-card">
-    <button class="qr-btn" onclick="startQRScan('storage')">📷 Scan QR Code on Box</button>
-    <div class="form-group" style="position:relative;">
-      <label class="form-label">Search Spare Part</label>
-      <input type="text" class="form-input" id="storage-search" placeholder="Type name or code..." oninput="onStorageSearch(this.value)" autocomplete="off">
-      <div class="sdrop" id="storage-drop" style="display:none;"></div>
-    </div>
-    <div class="sel-part" id="storage-sel" style="display:none;">
-      <div class="sel-id" id="storage-sel-id"></div>
-      <div class="sel-name" id="storage-sel-name"></div>
-      <div class="sel-info" id="storage-sel-info"></div>
-    </div>
-    <div class="form-group"><label class="form-label">📦 Storage Area Qty</label><input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0"></div>
-    <button class="submit-btn green-btn" onclick="submitStorageQty()">✅ Save Storage Qty</button>
-  </div>
-  <div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
+<div class="storage-info">
+<div class="storage-info-title">📦 Storage Opening Qty Entry</div>
+<div class="storage-info-sub">Scan QR or search — enter physical count for Storage Area only</div>
+</div>
+<div class="form-card">
+<button class="qr-btn" onclick="startQRScan('storage')">📷 Scan QR Code on Box</button>
+<div class="form-group" style="position:relative;">
+<label class="form-label">Search Spare Part</label>
+<input type="text" class="form-input" id="storage-search" placeholder="Type name or code..." oninput="onStorageSearch(this.value)" autocomplete="off">
+<div class="sdrop" id="storage-drop" style="display:none;"></div>
+</div>
+<div class="sel-part" id="storage-sel" style="display:none;">
+<div class="sel-id" id="storage-sel-id"></div>
+<div class="sel-name" id="storage-sel-name"></div>
+<div class="sel-info" id="storage-sel-info"></div>
+</div>
+<div class="form-group"><label class="form-label">📦 Storage Area Qty</label><input type="number" class="form-input storage-input" id="storage-qty" placeholder="0" min="0"></div>
+<button class="submit-btn green-btn" onclick="submitStorageQty()">✅ Save Storage Qty</button>
+</div>
+<div id="storage-progress" style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px;"></div>
 </div>
 
 <!-- INVENTORY COUNT -->
 <div class="screen" id="screen-inventory">
-  <div class="cards-grid" id="inv-cards"></div>
-  <div class="search-wrap"><span>🔍</span><input type="text" id="inv-search" placeholder="Search parts..." oninput="filterInventory()"></div>
-  <div class="filter-row">
-    <button class="ftab active" onclick="setInvFilter('all',this)">All</button>
-    <button class="ftab" onclick="setInvFilter('missing',this)">🔴 Missing</button>
-    <button class="ftab" onclick="setInvFilter('extra',this)">🟢 Extra</button>
-    <button class="ftab" onclick="setInvFilter('match',this)">⚪ Match</button>
-    <button class="ftab" onclick="setInvFilter('es400',this)">🛴 ES400</button>
-  </div>
-  <div id="inv-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
-  <div id="inv-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
-  <button onclick="loadInventoryScreen()" style="width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:12px;">🔄 Refresh</button>
+<div class="cards-grid" id="inv-cards"></div>
+<div class="search-wrap"><span>🔍</span><input type="text" id="inv-search" placeholder="Search parts..." oninput="filterInventory()"></div>
+<div class="filter-row">
+<button class="ftab active" onclick="setInvFilter('all',this)">All</button>
+<button class="ftab" onclick="setInvFilter('missing',this)">🔴 Missing</button>
+<button class="ftab" onclick="setInvFilter('extra',this)">🟢 Extra</button>
+<button class="ftab" onclick="setInvFilter('match',this)">⚪ Match</button>
+<button class="ftab" onclick="setInvFilter('es400',this)">🛴 ES400</button>
+</div>
+<div id="inv-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+<div id="inv-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<button onclick="loadInventoryScreen()" style="width:100%;padding:12px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:12px;">🔄 Refresh</button>
 </div>
 
 <!-- ADJUSTMENT -->
 <div class="screen" id="screen-adjustment">
-  <div id="adj-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+<div id="adj-content"><div class="loading"><div class="spinner"></div>Loading...</div></div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -417,7 +417,7 @@ function startQRScan(mode){
 }
 function loadZXingAndScan(video){
   if(typeof ZXing!=='undefined'){startScanLoop(video);return;}
-  var cdns=['https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js','https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js','https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js'];
+  var cdns=['https://unpkg.com/@zxing/[email protected]/umd/index.min.js','https://cdn.jsdelivr.net/npm/@zxing/[email protected]/umd/index.min.js','https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js'];
   var tried=0;
   function tryNext(){if(tried>=cdns.length){showManualInput();return;}var script=document.createElement('script');script.src=cdns[tried++];script.onload=function(){if(!S.qrActive)return;startScanLoop(video);};script.onerror=function(){tryNext();};document.head.appendChild(script);}
   tryNext();
@@ -516,14 +516,14 @@ function startAdjRefresh(){
 function buildNav(){
   var nav=document.getElementById('bottom-nav'),p=S.user.permissions,r=S.user.role;
   var html=navBtn('home','🏠','Home',true);
-  if(r==='Manager'||p.count)          html+=navBtn('count',     '🔢','Count', false);
-  if(r==='Manager'||p.adjustment)     html+=navBtn('adjustment','⚖️','Adjust',false);
-  if(r==='Manager'||p.stock)          html+=navBtn('stock',     '📦','Stock', false);
-  if(r==='Manager'||p.log)            html+=navBtn('log',       '➕','Log',   false);
-  if(r==='Manager'||p.history)        html+=navBtn('history',   '📋','History',false);
-  if(r==='Manager'||p.alerts)         html+=navBtn('alerts',    '🔔','Alerts',false);
-  if(r==='Manager'||p.storageOpening) html+=navBtn('storage',   '📥','Storage',false);
-  if(r==='Manager')                   html+=navBtn('inventory', '📊','Inv',   false);
+  if(r==='Manager'||p.count) html+=navBtn('count', '🔢','Count', false);
+  if(r==='Manager'||p.adjustment) html+=navBtn('adjustment','⚖️','Adjust',false);
+  if(r==='Manager'||p.stock) html+=navBtn('stock', '📦','Stock', false);
+  if(r==='Manager'||p.log) html+=navBtn('log', '➕','Log', false);
+  if(r==='Manager'||p.history) html+=navBtn('history', '📋','History',false);
+  if(r==='Manager'||p.alerts) html+=navBtn('alerts', '🔔','Alerts',false);
+  if(r==='Manager'||p.storageOpening) html+=navBtn('storage', '📥','Storage',false);
+  if(r==='Manager') html+=navBtn('inventory', '📊','Inv', false);
   nav.innerHTML=html;
 }
 function navBtn(id,icon,label,active){return '<button class="nav-btn'+(active?' active':'')+'" id="nav-'+id+'" onclick="showScreen(\''+id+'\',this)"><span class="icon">'+icon+'</span>'+label+'</button>';}
@@ -555,9 +555,9 @@ function renderHome(){
   var total=S.parts.length,todayUse=S.parts.reduce(function(s,p){return s+(p.todayUsed||0);},0);
   var inStorage=S.parts.filter(function(p){return(p.storageRemaining||0)>0;}).length;
   var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'+
-    '<div><div style="font-size:18px;font-weight:700;">Welcome, '+S.user.name+' 👋</div>'+
-    '<div style="font-size:13px;color:var(--muted);">'+S.user.role+' <span class="live-badge">● LIVE</span></div></div>'+
-    '<button style="background:rgba(0,0,0,0.08);border:none;color:var(--text);padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;" onclick="logout()">Logout</button></div>';
+  '<div><div style="font-size:18px;font-weight:700;">Welcome, '+S.user.name+' 👋</div>'+
+  '<div style="font-size:13px;color:var(--muted);">'+S.user.role+' <span class="live-badge">● LIVE</span></div></div>'+
+  '<button style="background:rgba(0,0,0,0.08);border:none;color:var(--text);padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;font-family:inherit;" onclick="logout()">Logout</button></div>';
   html+='<div class="cards-grid">';
   html+=statCard('Total Parts',total,'blue');html+=statCard('Low Stock',low,'red');
   html+=statCard('Used Today',todayUse,'orange');html+=statCard('In Storage',inStorage,'green');
@@ -619,12 +619,12 @@ function filterInventory(){
     var diffText=r.diff>0?'+'+r.diff:r.diff;
     var wurth=r.isWurth?'<span style="background:#c41230;color:white;font-size:10px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;">WÜRTH</span>':'';
     return '<div class="inv-card" style="border-left:4px solid '+(r.diff<0?'var(--red)':r.diff>0?'var(--green)':'var(--border)')+'">'+
-      '<div class="part-header" style="margin-bottom:10px;"><span class="part-id">'+r.id+'</span><span class="part-sep"> — </span><span class="part-name">'+r.name+'</span>'+wurth+'</div>'+
-      '<div class="part-stocks">'+
-        '<div class="stock-box"><div class="stock-lbl">📦 Physical</div><div class="inv-physical">'+r.physical+'</div></div>'+
-        '<div class="stock-box"><div class="stock-lbl">💻 Admin</div><div class="inv-admin">'+r.admin+'</div></div>'+
-        '<div class="stock-box"><div class="stock-lbl">Difference</div><div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div></div>'+
-      '</div></div>';
+    '<div class="part-header" style="margin-bottom:10px;"><span class="part-id">'+r.id+'</span><span class="part-sep"> — </span><span class="part-name">'+r.name+'</span>'+wurth+'</div>'+
+    '<div class="part-stocks">'+
+    '<div class="stock-box"><div class="stock-lbl">📦 Physical</div><div class="inv-physical">'+r.physical+'</div></div>'+
+    '<div class="stock-box"><div class="stock-lbl">💻 Admin</div><div class="inv-admin">'+r.admin+'</div></div>'+
+    '<div class="stock-box"><div class="stock-lbl">Difference</div><div class="stock-val" style="color:'+diffColor+';background:'+diffBg+';padding:2px 10px;border-radius:8px;">'+diffText+'</div></div>'+
+    '</div></div>';
   }).join('');
 }
 function setInvFilter(f,btn){S.invFilter=f;document.querySelectorAll('#screen-inventory .ftab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');filterInventory();}
@@ -654,13 +654,13 @@ function renderAdjustment(){
   // Manager override panel
   if(S.user.role==='Manager'){
     html+='<div class="mgr-override-box">'+
-      '<div class="mgr-override-title">⚙️ Manager Override — Set remaining directly</div>'+
-      '<div class="mgr-override-row">'+
-        '<input type="text" class="mgr-override-input" id="mgr-part-input" placeholder="Search part..." oninput="filterMgrSearch(this.value)" autocomplete="off">'+
-        '<input type="number" class="mgr-override-qty" id="mgr-qty-input" placeholder="Qty">'+
-        '<button onclick="applyManagerOverride()" style="padding:8px 12px;background:var(--orange);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Set</button>'+
-      '</div>'+
-      '<div id="mgr-drop" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;max-height:150px;overflow-y:auto;margin-top:4px;"></div>'+
+    '<div class="mgr-override-title">⚙️ Manager Override — Set remaining directly</div>'+
+    '<div class="mgr-override-row">'+
+    '<input type="text" class="mgr-override-input" id="mgr-part-input" placeholder="Search part..." oninput="filterMgrSearch(this.value)" autocomplete="off">'+
+    '<input type="number" class="mgr-override-qty" id="mgr-qty-input" placeholder="Qty">'+
+    '<button onclick="applyManagerOverride()" style="padding:8px 12px;background:var(--orange);color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Set</button>'+
+    '</div>'+
+    '<div id="mgr-drop" style="display:none;background:white;border:1px solid var(--border);border-radius:8px;max-height:150px;overflow-y:auto;margin-top:4px;"></div>'+
     '</div>';
   }
 
@@ -698,32 +698,32 @@ function adjCard(item,remClass,done){
   var absRem=Math.abs(item.remaining);
   var wurth=item.isWurth?'<span style="background:#c41230;color:white;font-size:9px;font-weight:800;padding:1px 3px;border-radius:2px;margin-left:2px;">W</span>':'';
   return '<div class="adj-card '+remClass+(done?' done':'')+'" id="adj-card-'+item.id+'">'+
-    '<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:2px;">'+item.name+wurth+'</div>'+
-    '<div style="font-size:10px;color:var(--blue);font-weight:700;margin-bottom:6px;">'+item.id+'</div>'+
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">'+
-      '<div style="text-align:center;min-width:36px;">'+
-        '<div class="adj-remaining '+remClass+'" id="adj-rem-'+item.id+'">'+absRem+'</div>'+
-        '<div style="font-size:10px;color:var(--muted);">of '+absOrig+'</div>'+
-      '</div>'+
-      (done?
-        '<span style="font-size:20px;">✅</span>':
-        '<div style="display:flex;gap:3px;align-items:center;">'+
-          '<button class="adj-btn adjust" onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'adjust\')">Adjust</button>'+
-          '<button class="adj-btn undo"   onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'undo\')">↩</button>'+
-        '</div>'
-      )+
-    '</div>'+
-    '<div class="adj-confirm" id="adj-confirm-'+item.id+'">'+
-      '<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px;" id="adj-confirm-label-'+item.id+'">How many?</div>'+
-      '<div class="adj-qty-row">'+
-        '<button class="adj-btn undo" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\', -1)">−</button>'+
-        '<input class="adj-qty-input" id="adj-qty-'+item.id+'" type="number" value="1" min="1">'+
-        '<button class="adj-btn adjust" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\',1)">+</button>'+
-        '<button class="adj-save-btn" id="adj-save-'+item.id+'" onclick="saveConfirm(\''+item.id+'\',\''+item.type+'\')">Save</button>'+
-        '<button class="adj-cancel-btn" onclick="cancelConfirm(\''+item.id+'\')">✕</button>'+
-      '</div>'+
-    '</div>'+
-    '<div style="font-size:10px;color:var(--muted);margin-top:4px;" id="adj-upd-'+item.id+'">'+(item.updatedBy&&item.updatedBy!=='System'?'👤 '+item.updatedBy:'')+'</div>'+
+  '<div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:2px;">'+item.name+wurth+'</div>'+
+  '<div style="font-size:10px;color:var(--blue);font-weight:700;margin-bottom:6px;">'+item.id+'</div>'+
+  '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">'+
+  '<div style="text-align:center;min-width:36px;">'+
+  '<div class="adj-remaining '+remClass+'" id="adj-rem-'+item.id+'">'+absRem+'</div>'+
+  '<div style="font-size:10px;color:var(--muted);">of '+absOrig+'</div>'+
+  '</div>'+
+  (done?
+  '<span style="font-size:20px;">✅</span>':
+  '<div style="display:flex;gap:3px;align-items:center;">'+
+  '<button class="adj-btn adjust" onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'adjust\')">Adjust</button>'+
+  '<button class="adj-btn undo" onclick="openConfirm(\''+item.id+'\',\''+item.type+'\',\'undo\')">↩</button>'+
+  '</div>'
+  )+
+  '</div>'+
+  '<div class="adj-confirm" id="adj-confirm-'+item.id+'">'+
+  '<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px;" id="adj-confirm-label-'+item.id+'">How many?</div>'+
+  '<div class="adj-qty-row">'+
+  '<button class="adj-btn undo" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\', -1)">−</button>'+
+  '<input class="adj-qty-input" id="adj-qty-'+item.id+'" type="number" value="1" min="1">'+
+  '<button class="adj-btn adjust" style="width:28px;height:28px;font-size:14px;" onclick="changeConfirmQty(\''+item.id+'\',1)">+</button>'+
+  '<button class="adj-save-btn" id="adj-save-'+item.id+'" onclick="saveConfirm(\''+item.id+'\',\''+item.type+'\')">Save</button>'+
+  '<button class="adj-cancel-btn" onclick="cancelConfirm(\''+item.id+'\')">✕</button>'+
+  '</div>'+
+  '</div>'+
+  '<div style="font-size:10px;color:var(--muted);margin-top:4px;" id="adj-upd-'+item.id+'">'+(item.updatedBy&&item.updatedBy!=='System'?'👤 '+item.updatedBy:'')+'</div>'+
   '</div>';
 }
 
@@ -808,8 +808,8 @@ function filterMgrSearch(q){
   if(matches.length===0){drop.style.display='none';return;}
   drop.innerHTML=matches.map(function(x){
     return '<div style="padding:8px 10px;cursor:pointer;border-bottom:1px solid #f5f5f5;font-size:12px;" onclick="selectMgrPart(\''+x.id+'\',\''+x.name.replace(/'/g,"\\'")+'\',' +x.remaining+')">'+
-      '<span style="color:var(--blue);font-weight:700;">'+x.id+'</span> — '+x.name+'<br>'+
-      '<span style="color:var(--muted);">Remaining: '+x.remaining+'</span></div>';
+    '<span style="color:var(--blue);font-weight:700;">'+x.id+'</span> — '+x.name+'<br>'+
+    '<span style="color:var(--muted);">Remaining: '+x.remaining+'</span></div>';
   }).join('');
   drop.style.display='block';
 }
@@ -856,13 +856,13 @@ function renderCountScreen(data){
   if(s.status==='inactive'||s.status==='closed'){if(S.user.role!=='Manager')html+='<div class="empty"><div class="empty-icon">⏸️</div>No active count session.<br>Ask manager to start.</div>';document.getElementById('count-content').innerHTML=html;return;}
   if(s.status==='active'){
     html+='<div class="form-card" id="count-form-card">'+
-      '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>'+
-      '<button class="qr-btn" onclick="startQRScan(\'count\')">📷 Scan QR Code</button>'+
-      '<div class="form-group" style="position:relative;"><label class="form-label">Or Search Part</label><input type="text" class="form-input" id="count-search-input" placeholder="Type name or code..." oninput="onCountSearch(this.value)" autocomplete="off"><div class="sdrop" id="count-drop" style="display:none;"></div></div>'+
-      '<div class="sel-part" id="count-sel" style="display:none;"><div class="sel-id" id="count-sel-id"></div><div class="sel-name" id="count-sel-name"></div><div class="sel-info" id="count-sel-info"></div></div>'+
-      '<div class="form-group"><label class="form-label">Actual Count</label><input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0"></div>'+
-      '<button class="submit-btn green-btn" onclick="submitCountEntry()">✅ Save Count</button>'+
-      '</div>';
+    '<div class="section-title" style="margin-top:0;">📷 Count a Part</div>'+
+    '<button class="qr-btn" onclick="startQRScan(\'count\')">📷 Scan QR Code</button>'+
+    '<div class="form-group" style="position:relative;"><label class="form-label">Or Search Part</label><input type="text" class="form-input" id="count-search-input" placeholder="Type name or code..." oninput="onCountSearch(this.value)" autocomplete="off"><div class="sdrop" id="count-drop" style="display:none;"></div></div>'+
+    '<div class="sel-part" id="count-sel" style="display:none;"><div class="sel-id" id="count-sel-id"></div><div class="sel-name" id="count-sel-name"></div><div class="sel-info" id="count-sel-info"></div></div>'+
+    '<div class="form-group"><label class="form-label">Actual Count</label><input type="number" class="form-input count-input" id="count-qty" placeholder="0" min="0"></div>'+
+    '<button class="submit-btn green-btn" onclick="submitCountEntry()">✅ Save Count</button>'+
+    '</div>';
   }
   var entries=data.entries||[],pendingParts=S.countParts.filter(function(p){return !p.counted;});
   html+='<div class="count-tabs"><button class="count-tab '+(S.countTab==='pending'?'active':'')+'" onclick="switchCountTab(\'pending\')">⬜ Pending ('+pendingParts.length+')</button><button class="count-tab green-tab '+(S.countTab==='counted'?'active':'')+'" onclick="switchCountTab(\'counted\')">✅ Counted ('+entries.length+')</button></div>';
@@ -982,10 +982,10 @@ function submitLog(){
 }
 
 function cancelMovement(rowIndex,itemID,name,type,qty){
-  if(!confirm('Delete this movement?\n\n'+type+' × '+qty+'\n'+itemID+' — '+name+'\n\nThis will automatically reverse the stock quantity.'))return;
+  if(!confirm('Delete this movement permanently?\n\n'+type+' × '+qty+'\n'+itemID+' — '+name+'\n\nStock will be restored immediately. This cannot be undone.'))return;
   api({action:'cancelMovement',pin:S.user.pin,rowIndex:rowIndex}).then(function(r){
     if(r.success){
-      showToast('✅ Movement cancelled!','success');
+      showToast('✅ Deleted — stock restored!','success');
       loadDashboardData(function(){ renderHistory(); });
     } else { showToast('❌ '+r.error,'error'); }
   });
