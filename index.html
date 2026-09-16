@@ -212,11 +212,24 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
 .mgr-override-row { display:flex; gap:6px; align-items:center; }
 .mgr-override-input { flex:1; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; }
 .mgr-override-qty { width:60px; padding:8px; border:1.5px solid var(--orange); border-radius:8px; font-size:14px; font-family:inherit; outline:none; text-align:center; }
+.success-check-overlay { position:fixed; inset:0; z-index:600; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.15); pointer-events:none; }
+.success-check-overlay.show { display:flex; }
+.success-check-box { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.success-check-circle { width:96px; height:96px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(0,0,0,0.3); animation:checkPop 0.22s ease-out; }
+.success-check-circle svg { width:52px; height:52px; }
+.success-check-text { color:white; font-size:15px; font-weight:700; background:rgba(0,0,0,0.55); padding:6px 18px; border-radius:20px; }
+@keyframes checkPop { 0%{transform:scale(0.4);opacity:0;} 100%{transform:scale(1);opacity:1;} }
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
+<div class="success-check-overlay" id="success-check">
+<div class="success-check-box">
+<div class="success-check-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 18 20 6"></polyline></svg></div>
+<div class="success-check-text">Submitted!</div>
+</div>
+</div>
 
 <!-- QR SCANNER -->
 <div class="qr-overlay" id="qr-overlay">
@@ -975,9 +988,22 @@ function submitLog(){
   if(btn.disabled)return;
   btn.disabled=true;btn.textContent='Submitting...';
   api({action:'logMovement',pin:S.user.pin,date:date,itemID:S.logSelected.id,name:S.logSelected.name,type:type,qty:qty,city:city||'',notes:note||''}).then(function(r){
-    if(r.success){showToast('✅ Movement logged!','success');S.logSelected=null;S.parts=[];document.getElementById('log-search').value='';document.getElementById('log-sel').style.display='none';document.getElementById('log-type').value='';document.getElementById('log-qty').value='';document.getElementById('log-city').value='';document.getElementById('log-notes').value='';document.getElementById('log-city-group').style.display='none';loadDashboardData(function(){});}
-    else{showToast('❌ '+r.error,'error');}
-    btn.disabled=false;btn.textContent='Submit Movement';
+    if(r.success){
+      // Confirmed by the server — only now do we show success. Reset the form and
+      // button immediately; the dashboard refresh runs quietly after, in the background.
+      showBigCheck();
+      S.logSelected=null;S.parts=[];
+      document.getElementById('log-search').value='';document.getElementById('log-sel').style.display='none';
+      document.getElementById('log-type').value='';document.getElementById('log-qty').value='';
+      document.getElementById('log-city').value='';document.getElementById('log-notes').value='';
+      document.getElementById('log-city-group').style.display='none';
+      btn.disabled=false;btn.textContent='Submit Movement';
+      loadDashboardData(function(){});
+    } else {
+      // Not confirmed — show a real error, nothing auto-retries. Check the sheet before resubmitting.
+      showToast('❌ '+r.error,'error');
+      btn.disabled=false;btn.textContent='Submit Movement';
+    }
   });
 }
 
@@ -1028,6 +1054,8 @@ function renderAlerts(){var low=S.parts.filter(function(p){return p.storageLow||
 
 // TOAST
 function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'');t.style.display='block';setTimeout(function(){t.style.display='none';},3000);}
+// Big green checkmark — only ever called on a CONFIRMED server success, never optimistically
+function showBigCheck(){var el=document.getElementById('success-check');if(!el)return;el.classList.add('show');setTimeout(function(){el.classList.remove('show');},1000);}
 
 // CLOSE DROPDOWNS
 document.addEventListener('click',function(e){
