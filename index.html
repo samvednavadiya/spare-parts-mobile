@@ -987,7 +987,10 @@ function submitLog(){
   var btn=document.getElementById('log-submit');
   if(btn.disabled)return;
   btn.disabled=true;btn.textContent='Submitting...';
-  api({action:'logMovement',pin:S.user.pin,date:date,itemID:S.logSelected.id,name:S.logSelected.name,type:type,qty:qty,city:city||'',notes:note||''}).then(function(r){
+  // Generated once per tap. If the network silently resends this exact request,
+  // it carries this same ID, and the server recognizes it instead of logging twice.
+  var reqId='r'+Date.now()+'_'+Math.random().toString(36).substr(2,9);
+  api({action:'logMovement',pin:S.user.pin,date:date,itemID:S.logSelected.id,name:S.logSelected.name,type:type,qty:qty,city:city||'',notes:note||'',requestId:reqId}).then(function(r){
     if(r.success){
       // Confirmed by the server — only now do we show success. Reset the form and
       // button immediately; the dashboard refresh runs quietly after, in the background.
