@@ -424,13 +424,13 @@ function startQRScan(mode){
     S.qrStream=stream;
     var video=document.getElementById('qr-video');
     video.srcObject=stream;video.setAttribute('playsinline','true');video.play();
-    video.onloadedmetadata=function(){document.getElementById('qr-status').textContent='🔍 Scanning... hold steady';loadZXingAndScan(video);};
+    video.onloadedmetadata=function(){document.getElementById('qr-status').textContent='🔍 Scanning... hold steady';loadJsQRAndScan(video);};
   })
   .catch(function(){document.getElementById('qr-status').textContent='❌ Camera blocked. Please allow camera access.';});
 }
-function loadZXingAndScan(video){
-  if(typeof ZXing!=='undefined'){startScanLoop(video);return;}
-  var cdns=['https://unpkg.com/@zxing/[email protected]/umd/index.min.js','https://cdn.jsdelivr.net/npm/@zxing/[email protected]/umd/index.min.js','https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.18.6/index.min.js'];
+function loadJsQRAndScan(video){
+  if(typeof jsQR!=='undefined'){startScanLoop(video);return;}
+  var cdns=['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js','https://unpkg.com/jsqr@1.4.0/dist/jsQR.min.js','https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js'];
   var tried=0;
   function tryNext(){if(tried>=cdns.length){showManualInput();return;}var script=document.createElement('script');script.src=cdns[tried++];script.onload=function(){if(!S.qrActive)return;startScanLoop(video);};script.onerror=function(){tryNext();};document.head.appendChild(script);}
   tryNext();
@@ -438,14 +438,21 @@ function loadZXingAndScan(video){
 function startScanLoop(video){
   if(!S.qrActive)return;
   var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
-  try{
-    var hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    var reader=new ZXing.BrowserMultiFormatReader(hints);S.qrReader=reader;
-    function scanFrame(){if(!S.qrActive)return;if(video.readyState!==video.HAVE_ENOUGH_DATA){S.qrScanLoop=setTimeout(scanFrame,300);return;}canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;ctx.drawImage(video,0,0,canvas.width,canvas.height);try{var result=reader.decodeBitmap(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(canvas))));if(result){var code=result.getText().trim();stopQRScan();handleQRResult(code);return;}}catch(e){}S.qrScanLoop=setTimeout(scanFrame,300);}
-    scanFrame();
-  }catch(e){showManualInput();}
+  function scanFrame(){
+    if(!S.qrActive)return;
+    if(video.readyState!==video.HAVE_ENOUGH_DATA){S.qrScanLoop=setTimeout(scanFrame,300);return;}
+    canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    try{
+      var imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+      var result=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+      if(result&&result.data){var code=result.data.trim();stopQRScan();handleQRResult(code);return;}
+    }catch(e){}
+    S.qrScanLoop=setTimeout(scanFrame,300);
+  }
+  scanFrame();
 }
-function stopQRScan(){S.qrActive=false;if(S.qrScanLoop){clearTimeout(S.qrScanLoop);S.qrScanLoop=null;}if(S.qrReader){try{S.qrReader.reset();}catch(e){}S.qrReader=null;}if(S.qrStream){S.qrStream.getTracks().forEach(function(t){t.stop();});S.qrStream=null;}var video=document.getElementById('qr-video');if(video){video.srcObject=null;video.src='';}document.getElementById('qr-overlay').classList.remove('show');document.getElementById('qr-status').textContent='';}
+function stopQRScan(){S.qrActive=false;if(S.qrScanLoop){clearTimeout(S.qrScanLoop);S.qrScanLoop=null;}if(S.qrStream){S.qrStream.getTracks().forEach(function(t){t.stop();});S.qrStream=null;}var video=document.getElementById('qr-video');if(video){video.srcObject=null;video.src='';}document.getElementById('qr-overlay').classList.remove('show');document.getElementById('qr-status').textContent='';}
 function showManualInput(){document.getElementById('qr-status').innerHTML='<input type="text" id="manual-qr-input" placeholder="Type item code here..." style="margin-top:8px;padding:10px;border-radius:8px;border:none;font-size:16px;width:260px;text-align:center;" autocomplete="off"><button onclick="submitManualCode()" style="display:block;margin:8px auto 0;padding:10px 30px;background:var(--blue);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Submit</button>';setTimeout(function(){var i=document.getElementById('manual-qr-input');if(i)i.focus();},300);}
 function submitManualCode(){var input=document.getElementById('manual-qr-input');if(!input)return;var code=input.value.trim();if(!code)return;stopQRScan();handleQRResult(code);}
 function handleQRResult(code){
