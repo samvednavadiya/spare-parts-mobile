@@ -613,7 +613,7 @@ function managerCloseCount(){if(!confirm('Permanently close this count?\n\nThis 
 function loadInventoryScreen(){
   document.getElementById('inv-content').innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
   document.getElementById('inv-cards').innerHTML='';
-  api({action:'getInventoryCount',pin:S.user.pin}).then(function(r){
+  api({action:'getInvCount',pin:S.user.pin}).then(function(r){
     if(!r.success){showToast('❌ '+r.error,'error');return;}
     S.invData=r.data||[];renderInventoryCards();filterInventory();
   });
